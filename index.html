@@ -145,6 +145,48 @@
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .70), 0 10px 24px rgba(44, 128, 164, .10);
     }
 
+    .name-panel {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .94);
+      padding: 14px;
+    }
+
+    .name-panel label {
+      color: #0b3445;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .name-panel input {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid rgba(112, 184, 212, .62);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .98);
+      color: var(--ink);
+      font: inherit;
+      font-weight: 800;
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .name-panel input:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(25, 188, 230, .16);
+    }
+
+    .name-panel p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.6;
+    }
+
     .question-card h2 {
       margin: 0;
       font-size: clamp(24px, 4vw, 44px);
@@ -941,6 +983,12 @@
             <span>LIVE SELECT</span>
           </div>
 
+          <div class="name-panel" id="namePanel">
+            <label for="playerNameInput">名前（任意）</label>
+            <input id="playerNameInput" type="text" autocomplete="name" maxlength="24" placeholder="名前を入れる">
+            <p>なにも入れない場合、結果とSSに名前は表示されません。</p>
+          </div>
+
           <article class="question-card" aria-live="polite">
             <p class="kicker" id="axisText"></p>
             <h2 id="questionTitle" tabindex="-1"></h2>
@@ -962,7 +1010,7 @@
           <div class="result-head">
             <div>
               <p class="kicker">CHARACTER SELECT</p>
-              <h2>おすすめ候補</h2>
+              <h2 id="resultTitle">おすすめ候補</h2>
             </div>
             <div class="actions">
               <button class="btn strong" type="button" id="retryBtn">もう一度</button>
@@ -1314,6 +1362,7 @@
     let rankedCache = null;
     let allRankedResults = [];
     let activeCostFilter = "all";
+    let playerName = "";
 
     const questionScreen = document.getElementById("questionScreen");
     const resultPanel = document.getElementById("resultPanel");
@@ -1325,6 +1374,9 @@
     const leftLabel = document.getElementById("leftLabel");
     const rightLabel = document.getElementById("rightLabel");
     const choiceGrid = document.getElementById("choiceGrid");
+    const playerNameInput = document.getElementById("playerNameInput");
+    const namePanel = document.getElementById("namePanel");
+    const resultTitle = document.getElementById("resultTitle");
     const backBtn = document.getElementById("backBtn");
     const resetBtn = document.getElementById("resetBtn");
     const retryBtn = document.getElementById("retryBtn");
@@ -1346,6 +1398,7 @@
       document.querySelectorAll(".precision-note").forEach((el) => el.remove());
       stepText.textContent = `QUESTION ${step + 1} / ${activeQuestions.length}`;
       progress.style.width = `${(step / activeQuestions.length) * 100}%`;
+      namePanel.style.display = step === 0 && !precisionMode ? "grid" : "none";
       axisText.textContent = q.axis;
       questionTitle.textContent = q.title;
       questionDesc.textContent = q.desc;
@@ -1366,6 +1419,35 @@
       backBtn.disabled = step === 0;
       questionScreen.classList.remove("hidden");
       resultPanel.classList.remove("show");
+    }
+
+    function cleanPlayerName() {
+      return playerName.trim();
+    }
+
+    function resultTitleText() {
+      const name = cleanPlayerName();
+      return name ? `${name}さんのおすすめキャラ` : "おすすめ候補";
+    }
+
+    function applyNameRules(ranked) {
+      const name = cleanPlayerName();
+      if (name === "つむぎ" || name === "紬") {
+        const deucalion = ranked.find((candidate) => candidate.name === "デュカリオン" || candidate.id === "deucalion");
+        return deucalion ? Array.from({ length: 8 }, () => ({ ...deucalion })) : ranked;
+      }
+      const blockedNames = new Set();
+      const blockedIds = new Set();
+      if (name === "えんじゅつ" || name === "袁術") {
+        blockedNames.add("シュウウ");
+        blockedIds.add("shuuu");
+      }
+      if (name === "桃" || name === "もも") {
+        ["咲迦", "エミカ", "ドラグナー", "レミエル", "キャミィ"].forEach((item) => blockedNames.add(item));
+        ["saka", "dragner", "remiel", "cammy"].forEach((item) => blockedIds.add(item));
+      }
+      if (!blockedNames.size && !blockedIds.size) return ranked;
+      return ranked.filter((candidate) => !blockedNames.has(candidate.name) && !blockedIds.has(candidate.id));
     }
 
     function choose(axis, value) {
@@ -1821,13 +1903,14 @@
     }
 
     function showResults() {
-      allRankedResults = rankedCandidates();
+      allRankedResults = applyNameRules(rankedCandidates());
       activeCostFilter = "all";
       lastResults = allRankedResults.slice(0, 8);
 
       progress.style.width = "100%";
       questionScreen.classList.add("hidden");
       resultPanel.classList.add("show");
+      resultTitle.textContent = resultTitleText();
       renderInsights();
       renderExtras();
       saveCurrentHistory();
@@ -1987,6 +2070,9 @@
       precisionMode = false;
       rankedCache = null;
       activeCostFilter = "all";
+      playerName = "";
+      playerNameInput.value = "";
+      resultTitle.textContent = "おすすめ候補";
       renderQuestion();
     }
 
@@ -2031,6 +2117,16 @@
       ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
     }
 
+    function fitCanvasText(ctx, text, maxWidth) {
+      const value = String(text || "");
+      if (ctx.measureText(value).width <= maxWidth) return value;
+      let clipped = value;
+      while (clipped.length > 0 && ctx.measureText(`${clipped}…`).width > maxWidth) {
+        clipped = clipped.slice(0, -1);
+      }
+      return clipped ? `${clipped}…` : "";
+    }
+
     async function createResultShareBlob() {
       const picks = lastResults.slice(0, 8);
       if (!picks.length) return null;
@@ -2067,16 +2163,17 @@
 
       ctx.fillStyle = "#0d2f3d";
       ctx.font = "900 48px 'Noto Sans JP', sans-serif";
-      ctx.fillText("初心者キャラ診断 結果", 58, 86);
+      const titleText = cleanPlayerName() ? `${cleanPlayerName()}さんの初心者キャラ診断 結果` : "初心者キャラ診断 結果";
+      ctx.fillText(fitCanvasText(ctx, titleText, 530), 58, 86);
       ctx.fillStyle = "#19bce6";
       ctx.font = "900 24px 'Noto Sans JP', sans-serif";
-      ctx.fillText("TOP 8 CHARACTER SELECT", 62, 122);
+      ctx.fillText(cleanPlayerName() ? "TOP 8 RECOMMENDED CHARACTER SELECT" : "TOP 8 CHARACTER SELECT", 62, 122);
       ctx.fillStyle = "#315f73";
       ctx.font = "900 24px 'Noto Sans JP', sans-serif";
       const styleText = `TYPE: ${style.name}`;
-      ctx.fillText(styleText.length > 34 ? `${styleText.slice(0, 34)}…` : styleText, 430, 88);
+      ctx.fillText(fitCanvasText(ctx, styleText, 520), 620, 88);
       ctx.font = "800 18px 'Noto Sans JP', sans-serif";
-      ctx.fillText(dateText, 430, 120);
+      ctx.fillText(dateText, 620, 120);
 
       const images = await Promise.all(picks.map((pick) => loadShareImage(pick.image)));
       picks.forEach((pick, index) => {
@@ -2112,18 +2209,18 @@
 
         ctx.restore();
         ctx.fillStyle = "#0d2f3d";
-        ctx.font = "900 23px 'Noto Sans JP', sans-serif";
+        ctx.font = "900 22px 'Noto Sans JP', sans-serif";
         const name = `${index + 1}. ${pick.name}`;
-        ctx.fillText(name.length > 12 ? `${name.slice(0, 12)}…` : name, x + 14, y + 140);
+        ctx.fillText(fitCanvasText(ctx, name, w - 28), x + 14, y + 140);
         ctx.fillStyle = "#527283";
         ctx.font = "800 17px 'Noto Sans JP', sans-serif";
-        ctx.fillText(`${pick.costLabel || ""} / ${pick.matchLabel || "PICK"} ${pick.match || "-"}%`, x + 14, y + 166);
+        ctx.fillText(fitCanvasText(ctx, `${pick.costLabel || ""} / ${pick.matchLabel || "PICK"} ${pick.match || "-"}%`, w - 28), x + 14, y + 166);
       });
 
       ctx.fillStyle = "#527283";
       ctx.font = "800 22px 'Noto Sans JP', sans-serif";
       ctx.fillText("Starwardall Character Finder", 58, 585);
-      ctx.fillText(`TYPE: ${style.name}`.slice(0, 46), 360, 585);
+      ctx.fillText(fitCanvasText(ctx, `TYPE: ${style.name}`, 720), 360, 585);
 
       return new Promise((resolve) => canvas.toBlob(resolve, "image/png", .92));
     }
@@ -2142,6 +2239,9 @@
         renderQuestion();
       }
     });
+    playerNameInput.addEventListener("input", () => {
+      playerName = playerNameInput.value;
+    });
     resetBtn.addEventListener("click", resetFlow);
     retryBtn.addEventListener("click", resetFlow);
     costTabs.addEventListener("click", (event) => {
@@ -2155,7 +2255,9 @@
     window.createResultShareBlob = createResultShareBlob;
     shareBtn.addEventListener("click", async () => {
       const names = lastResults.slice(0, 8).map((c) => c.name).join("、");
-      const text = `初心者キャラ診断のおすすめ候補: ${names}`;
+      const text = cleanPlayerName()
+        ? `${cleanPlayerName()}さんのおすすめキャラ: ${names}`
+        : `初心者キャラ診断のおすすめ候補: ${names}`;
       try {
         const blob = await createResultShareBlob();
         if (blob) {
