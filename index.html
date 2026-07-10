@@ -336,7 +336,7 @@
 
     .profile-row {
       display: grid;
-      grid-template-columns: 90px 1fr 90px;
+      grid-template-columns: 72px minmax(0, 1fr) 72px 42px;
       gap: 10px;
       align-items: center;
       color: var(--muted);
@@ -348,7 +348,9 @@
       position: relative;
       height: 8px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .10);
+      background:
+        repeating-linear-gradient(90deg, rgba(13, 47, 61, .18) 0 1px, transparent 1px 10%),
+        rgba(64, 155, 187, .12);
     }
 
     .profile-row i::after {
@@ -362,6 +364,17 @@
       background: var(--cyan);
       transform: translate(-50%, -50%);
       box-shadow: 0 0 8px rgba(56, 215, 255, .35);
+    }
+
+    .profile-score {
+      display: inline-grid;
+      place-items: center;
+      min-width: 34px;
+      min-height: 26px;
+      border-radius: 999px;
+      background: rgba(25, 188, 230, .14);
+      color: #087b94;
+      font-weight: 900;
     }
 
     .plan-list {
@@ -607,13 +620,18 @@
     }
 
     dialog {
-      width: min(720px, calc(100% - 24px));
+      position: fixed;
+      inset: 50% auto auto 50%;
+      transform: translate(-50%, -50%);
+      width: min(920px, calc(100% - 24px));
+      max-height: calc(100vh - 34px);
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 0;
       color: var(--ink);
       background: rgba(240, 253, 255, .82);
       box-shadow: var(--shadow);
+      overflow: hidden;
     }
 
     dialog::backdrop {
@@ -625,6 +643,8 @@
       display: grid;
       grid-template-columns: 210px minmax(0, 1fr);
       gap: 18px;
+      max-height: calc(100vh - 112px);
+      overflow: auto;
     }
 
     .modal img {
@@ -703,7 +723,9 @@
     .close-row {
       display: flex;
       justify-content: flex-end;
-      padding: 0 20px 20px;
+      padding: 12px 20px 18px;
+      border-top: 1px solid var(--line);
+      background: rgba(240, 253, 255, .94);
     }
 
     .detail-list-title {
@@ -1281,15 +1303,17 @@
     function preferenceSummary() {
       return questions.map((q) => {
         const value = Number(answers[q.id] ?? 3);
+        const score10 = Math.round(((value - 1) / 4) * 9 + 1);
         const option = q.options.find((item) => Number(item[2]) === value);
         return {
           id: q.id,
           left: q.left,
           right: q.right,
           value,
+          score10,
           label: option?.[0] || String(value),
           hint: option?.[1] || "",
-          pos: `${((value - 1) / 4) * 100}%`
+          pos: `${((score10 - 1) / 9) * 100}%`
         };
       });
     }
@@ -1457,8 +1481,9 @@
             ${prefs.map((item) => `
               <div class="profile-row">
                 <span>${esc(item.left)}</span>
-                <i style="--pos:${item.pos}" title="${esc(item.label)}"></i>
+                <i style="--pos:${item.pos}" title="${esc(item.label)} / 10段階: ${item.score10}"></i>
                 <span>${esc(item.right)}</span>
+                <span class="profile-score">${item.score10}</span>
               </div>
             `).join("")}
           </div>
