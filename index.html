@@ -7,8 +7,8 @@
   <style>
     :root {
       --bg: #eafaff;
-      --panel: rgba(255, 255, 255, .42);
-      --panel-2: rgba(255, 255, 255, .28);
+      --panel: rgba(255, 255, 255, .92);
+      --panel-2: rgba(246, 253, 255, .86);
       --ink: #0d2f3d;
       --muted: #527283;
       --line: rgba(112, 184, 212, .34);
@@ -63,7 +63,7 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       background:
-        linear-gradient(135deg, rgba(255, 255, 255, .72), rgba(215, 248, 255, .34)),
+        linear-gradient(135deg, rgba(255, 255, 255, .94), rgba(215, 248, 255, .82)),
         var(--panel);
       box-shadow: var(--shadow);
     }
@@ -75,7 +75,7 @@
       gap: 18px;
       padding: 24px clamp(18px, 4vw, 44px);
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255, 255, 255, .48), rgba(255, 255, 255, .12));
+      background: linear-gradient(180deg, rgba(255, 255, 255, .92), rgba(242, 253, 255, .82));
     }
 
     .kicker {
@@ -139,8 +139,8 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       background:
-        linear-gradient(145deg, rgba(255, 255, 255, .68), rgba(220, 248, 255, .30)),
-        rgba(255, 255, 255, .36);
+        linear-gradient(145deg, rgba(255, 255, 255, .96), rgba(220, 248, 255, .86)),
+        rgba(255, 255, 255, .94);
       padding: clamp(18px, 4vw, 34px);
       box-shadow: inset 0 1px 0 rgba(255, 255, 255, .70), 0 10px 24px rgba(44, 128, 164, .10);
     }
@@ -167,7 +167,7 @@
       border-radius: 999px;
       padding: 7px 10px;
       color: #087b94;
-      background: rgba(255, 255, 255, .42);
+      background: rgba(255, 255, 255, .88);
       font-size: 12px;
       font-weight: 900;
     }
@@ -191,7 +191,7 @@
       min-height: 112px;
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: linear-gradient(160deg, rgba(255, 255, 255, .60), rgba(207, 244, 255, .24));
+      background: linear-gradient(160deg, rgba(255, 255, 255, .94), rgba(207, 244, 255, .78));
       color: var(--ink);
       cursor: pointer;
       padding: 12px;
@@ -230,7 +230,7 @@
       min-height: 42px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: rgba(255, 255, 255, .46);
+      background: rgba(255, 255, 255, .94);
       color: var(--ink);
       padding: 0 15px;
       cursor: pointer;
@@ -296,7 +296,7 @@
       min-height: 38px;
       border: 1px solid var(--line);
       border-radius: 999px;
-      background: rgba(255, 255, 255, .48);
+      background: rgba(255, 255, 255, .94);
       color: var(--muted);
       padding: 0 14px;
       cursor: pointer;
@@ -319,7 +319,7 @@
     .insight-card {
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: rgba(255, 255, 255, .46);
+      background: rgba(255, 255, 255, .94);
       padding: 14px;
     }
 
@@ -438,7 +438,7 @@
     .extra-card {
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: rgba(255, 255, 255, .46);
+      background: rgba(255, 255, 255, .94);
       padding: 14px;
     }
 
@@ -518,7 +518,7 @@
     .history-card {
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: rgba(255, 255, 255, .48);
+      background: rgba(255, 255, 255, .94);
       padding: 12px;
     }
 
@@ -544,7 +544,7 @@
     .avoid-panel {
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: rgba(255, 255, 255, .48);
+      background: rgba(255, 255, 255, .94);
       padding: 14px;
       margin: 14px 0;
     }
@@ -567,7 +567,7 @@
     .avoid-list li {
       border: 1px solid rgba(232, 95, 122, .28);
       border-radius: 12px;
-      background: rgba(255, 255, 255, .58);
+      background: rgba(255, 255, 255, .94);
       padding: 10px;
       color: var(--muted);
       font-size: 13px;
@@ -593,7 +593,7 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       overflow: hidden;
-      background: rgba(255, 255, 255, .52);
+      background: rgba(255, 255, 255, .96);
       cursor: pointer;
       text-align: left;
       color: var(--ink);
@@ -607,7 +607,7 @@
       height: 150px;
       object-fit: cover;
       display: block;
-      background: linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(151, 232, 250, .26));
+      background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(151, 232, 250, .72));
     }
 
     .card-art {
@@ -617,7 +617,7 @@
       display: grid;
       place-items: center;
       background:
-        linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(151, 232, 250, .26));
+        linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(151, 232, 250, .72));
       color: rgba(13, 47, 61, .22);
       font-size: 42px;
       font-weight: 900;
@@ -704,20 +704,20 @@
       border-radius: 18px;
       padding: 0;
       color: var(--ink);
-      background: rgba(240, 253, 255, .82);
+      background: rgba(247, 253, 255, .98);
       box-shadow: var(--shadow);
       overflow: hidden;
     }
 
     dialog::backdrop {
-      background: rgba(20, 77, 97, .38);
+      background: rgba(20, 77, 97, .52);
     }
 
     .modal-shell {
       display: grid;
       grid-template-rows: 1fr auto;
       height: 100%;
-      background: rgba(240, 253, 255, .94);
+      background: rgba(247, 253, 255, .98);
     }
 
     .modal {
@@ -740,7 +740,7 @@
       object-fit: cover;
       border-radius: 16px;
       border: 1px solid var(--line);
-      background: rgba(255, 255, 255, .34);
+      background: rgba(255, 255, 255, .96);
     }
 
     .modal > div {
@@ -757,6 +757,32 @@
       color: var(--muted);
       line-height: 1.7;
       font-size: 14px;
+    }
+
+    .red-lock {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0 12px;
+      border: 1px solid rgba(232, 95, 122, .28);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, .96);
+      color: #0b3445;
+      font-weight: 900;
+    }
+
+    .red-lock b {
+      color: #b4233f;
+      font-size: 18px;
+    }
+
+    .red-lock a {
+      color: #087b94;
+      font-size: 12px;
+      font-weight: 900;
+      text-decoration: none;
     }
 
     .modal ul {
@@ -792,7 +818,7 @@
       border-radius: 10px;
       padding: 8px;
       color: var(--muted);
-      background: rgba(255, 255, 255, .38);
+      background: rgba(255, 255, 255, .94);
       font-size: 12px;
       font-weight: 800;
     }
@@ -800,7 +826,7 @@
     .breakdown-row i {
       height: 7px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, .10);
+      background: rgba(64, 155, 187, .14);
       overflow: hidden;
     }
 
@@ -816,7 +842,7 @@
       justify-content: flex-end;
       padding: 12px 20px 18px;
       border-top: 1px solid var(--line);
-      background: rgba(240, 253, 255, .94);
+      background: rgba(247, 253, 255, .98);
     }
 
     .detail-list-title {
@@ -1126,6 +1152,86 @@
       };
     }
 
+    const redLockByName = {
+      "アイーダ": "35",
+      "アイスリン": "35",
+      "アカツキ": "33",
+      "アリス": "29",
+      "アンジェリス": "34",
+      "イーザー": "33",
+      "ヴァーチェ": "29",
+      "ヴァルキア": "29",
+      "ヴォイドセーバー": "30",
+      "エヴァ": "33",
+      "エルフィン": "37",
+      "オーキッド": "27",
+      "カゼ": "35",
+      "カタリナ": "33",
+      "ガラハッド": "31",
+      "ガラハッド・暁": "33",
+      "キャヴァリー": "34",
+      "キャッティ": "31",
+      "キャミィ": "28",
+      "クリスタ": "33",
+      "グリフィン": "33",
+      "ケルビム": "33",
+      "ザハロワ": "35",
+      "サンダーボルト・OTOME": "33",
+      "シグナス": "31",
+      "シャープ": "35",
+      "シャオリン": "29",
+      "シュウウ": "33",
+      "スカイセーバー": "31",
+      "スコーピオン": "31",
+      "スズラン": "33",
+      "スティレット": "30",
+      "スノーウォル": "37",
+      "セイレン": "33",
+      "セラフィム": "29",
+      "ダークスター": "33",
+      "タチアナ": "29",
+      "チンニ": "35",
+      "デッド・アライブ": "31",
+      "デッドマスター": "33",
+      "デュカリオン": "33",
+      "ドラグナー": "35",
+      "ノーラ": "29",
+      "バーゼラルド": "34",
+      "パラス": "29",
+      "ハルカ": "33",
+      "ヒカリ": "33",
+      "ヒビキ": "27",
+      "フィービー": "35",
+      "ブラック★ロックシューター": "34",
+      "フランカー": "31",
+      "ブリーカー": "27",
+      "フリード": "33",
+      "プリシュカ": "33",
+      "ベータ": "31",
+      "ベータ-ロンギヌス": "34",
+      "ボルゾイ": "30",
+      "ヤミン": "33",
+      "ライン": "33",
+      "ラジエル": "31",
+      "ランスロット": "33",
+      "レキ": "30",
+      "レミエル": "33",
+      "レム": "33",
+      "ローランド": "29",
+      "ロタ": "29",
+      "稲": "34",
+      "影": "27",
+      "轟雷改": "32",
+      "咲迦": "29",
+      "秋雲": "33",
+      "十八号": "31",
+      "無銘": "32"
+    };
+
+    function redLockFor(candidate) {
+      return candidate?.redLock || redLockByName[candidate?.name] || "-";
+    }
+
     const candidates = Array.isArray(window.finderCandidates)
       ? window.finderCandidates.map((item) => ({
         id: item.characterId,
@@ -1143,11 +1249,12 @@
           : item.image && item.image.startsWith("http") ? item.image : `https://starward-lab.com${item.image || ""}`,
         axes: item.axes || {},
         beginnerFit: item.axes?.beginnerFit || 3,
+        redLock: redLockByName[item.name] || "-",
         summary: item.summary || "",
         reasons: item.reasons || [],
         cautions: item.cautions || []
       }))
-      : fallbackCandidates;
+      : fallbackCandidates.map((item) => ({ ...item, redLock: redLockByName[item.name] || "-" }));
 
     const axisLabels = {
       rangeStyle: "射撃・格闘",
@@ -1829,12 +1936,18 @@
           </div>
         ` : "";
         const tags = (candidate.matched || []).map((text) => `<span>${esc(text)}</span>`).join("");
+        const redLock = redLockFor(candidate);
         modalBody.innerHTML = `
         <img src="${esc(candidate.image)}" alt="${esc(candidate.name)}" onerror="this.style.display='none'">
         <div>
           <p class="kicker">${esc(candidate.matchLabel || "PICK")} / MATCH ${esc(candidate.match ?? "-")}%</p>
           <h3>${esc(candidate.name)}</h3>
           <p><b>${esc(candidate.costLabel || `${candidate.cost}コスト`)} / 総合 ${esc(candidate.totalRank || candidate.rank)} / 初心者 ${esc(candidate.beginnerRank || candidate.rank)}</b></p>
+          <div class="red-lock">
+            <span>赤ロック値</span>
+            <b>${esc(redLock)}</b>
+            <a href="https://syuna05.github.io/StarwardDB/characters.html" target="_blank" rel="noreferrer">StarwardDB参照</a>
+          </div>
           <p>${esc(candidate.summary)}</p>
           <div class="tags">${tags}</div>
           ${scoreComponents}
