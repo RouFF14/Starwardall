@@ -655,10 +655,12 @@
 
     dialog {
       position: fixed;
-      inset: 50% auto auto 50%;
-      transform: translate(-50%, -50%);
-      width: min(920px, calc(100% - 24px));
-      max-height: calc(100vh - 34px);
+      inset: 18px;
+      width: auto;
+      max-width: none;
+      height: calc(100vh - 36px);
+      max-height: none;
+      margin: 0;
       border: 1px solid var(--line);
       border-radius: 18px;
       padding: 0;
@@ -675,16 +677,17 @@
     .modal-shell {
       display: grid;
       grid-template-rows: 1fr auto;
-      max-height: calc(100vh - 34px);
+      height: 100%;
       background: rgba(240, 253, 255, .94);
     }
 
     .modal {
-      padding: 20px;
+      padding: clamp(18px, 3vw, 34px);
       display: grid;
-      grid-template-columns: 210px minmax(0, 1fr);
-      gap: 18px;
-      max-height: calc(100vh - 112px);
+      grid-template-columns: minmax(240px, 30vw) minmax(0, 1fr);
+      gap: clamp(18px, 3vw, 34px);
+      height: 100%;
+      max-height: none;
       overflow: auto;
       min-height: 0;
       align-items: start;
@@ -693,6 +696,7 @@
     .modal img {
       width: 100%;
       min-width: 0;
+      max-height: calc(100vh - 160px);
       aspect-ratio: 3 / 4;
       object-fit: cover;
       border-radius: 16px;
@@ -834,6 +838,16 @@
       .history-panel,
       .modal {
         grid-template-columns: 1fr;
+      }
+
+      dialog {
+        inset: 8px;
+        height: calc(100vh - 16px);
+      }
+
+      .modal img {
+        max-height: 320px;
+        object-fit: contain;
       }
       .choice { min-height: 86px; }
       .topline { grid-template-columns: 1fr; }
