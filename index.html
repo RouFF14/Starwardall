@@ -285,6 +285,30 @@
       gap: 12px;
     }
 
+    .cost-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 14px;
+    }
+
+    .cost-tab {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .48);
+      color: var(--muted);
+      padding: 0 14px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .cost-tab.is-active {
+      border-color: var(--cyan);
+      background: var(--cyan);
+      color: #fff;
+    }
+
     .insight-panel {
       display: grid;
       grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
@@ -795,6 +819,7 @@
           <div class="insight-panel" id="insightPanel"></div>
           <div class="compare-panel" id="comparePanel"></div>
           <div class="extra-panel" id="extraPanel"></div>
+          <div class="cost-tabs" id="costTabs" aria-label="コスト別おすすめ候補"></div>
           <div class="result-grid" id="resultGrid" aria-label="診断結果のおすすめ候補8体"></div>
         </section>
       </div>
@@ -1049,6 +1074,8 @@
     let activeQuestions = questions;
     let precisionMode = false;
     let rankedCache = null;
+    let allRankedResults = [];
+    let activeCostFilter = "all";
 
     const questionScreen = document.getElementById("questionScreen");
     const resultPanel = document.getElementById("resultPanel");
@@ -1067,6 +1094,7 @@
     const insightPanel = document.getElementById("insightPanel");
     const comparePanel = document.getElementById("comparePanel");
     const extraPanel = document.getElementById("extraPanel");
+    const costTabs = document.getElementById("costTabs");
     const resultGrid = document.getElementById("resultGrid");
     const modal = document.getElementById("modal");
     const modalBody = document.getElementById("modalBody");
@@ -1117,6 +1145,18 @@
         .map((candidate) => analyzeCandidate(candidate))
         .sort((a, b) => b.score - a.score || Number(b.axes?.beginnerFit || 0) - Number(a.axes?.beginnerFit || 0));
       return rankedCache;
+    }
+
+    function costKey(candidate) {
+      const cost = Number(candidate.cost || String(candidate.costLabel || "").replace(/[^0-9.]/g, ""));
+      if (cost >= 3) return "30";
+      if (cost >= 2.5) return "25";
+      if (cost >= 2) return "20";
+      return "15";
+    }
+
+    function costLabelFromKey(key) {
+      return ({ all: "全体", "30": "3.0", "25": "2.5", "20": "2.0", "15": "1.5" })[key] || key;
     }
 
     function needsPrecision() {
@@ -1443,16 +1483,41 @@
     }
 
     function showResults() {
-      lastResults = rankedCandidates().slice(0, 8);
+      allRankedResults = rankedCandidates();
+      activeCostFilter = "all";
+      lastResults = allRankedResults.slice(0, 8);
 
       progress.style.width = "100%";
       questionScreen.classList.add("hidden");
       resultPanel.classList.add("show");
       renderInsights();
       renderExtras();
+      renderCostTabs();
+      renderResultCards();
+    }
+
+    function resultsForFilter(filter) {
+      const base = filter === "all"
+        ? allRankedResults
+        : allRankedResults.filter((candidate) => costKey(candidate) === filter);
+      return base.slice(0, 8);
+    }
+
+    function renderCostTabs() {
+      const keys = ["all", "30", "25", "20", "15"];
+      costTabs.innerHTML = keys.map((key) => {
+        const count = key === "all"
+          ? allRankedResults.length
+          : allRankedResults.filter((candidate) => costKey(candidate) === key).length;
+        return `<button class="cost-tab${key === activeCostFilter ? " is-active" : ""}" type="button" data-cost="${key}">${costLabelFromKey(key)} <span>${count}</span></button>`;
+      }).join("");
+    }
+
+    function renderResultCards() {
+      const shownResults = resultsForFilter(activeCostFilter);
       resultGrid.innerHTML = "";
 
-      lastResults.forEach((candidate) => {
+      shownResults.forEach((candidate) => {
         const card = document.createElement("button");
         card.className = "card";
         card.type = "button";
@@ -1562,9 +1627,11 @@
       step = 0;
       answers = {};
       lastResults = [];
+      allRankedResults = [];
       activeQuestions = questions;
       precisionMode = false;
       rankedCache = null;
+      activeCostFilter = "all";
       renderQuestion();
     }
 
@@ -1610,7 +1677,7 @@
     }
 
     async function createResultShareBlob() {
-      const picks = lastResults.slice(0, 3);
+      const picks = lastResults.slice(0, 8);
       if (!picks.length) return null;
       const canvas = document.createElement("canvas");
       canvas.width = 1200;
@@ -1641,20 +1708,22 @@
       }
 
       ctx.fillStyle = "#0d2f3d";
-      ctx.font = "900 54px 'Noto Sans JP', sans-serif";
+      ctx.font = "900 48px 'Noto Sans JP', sans-serif";
       ctx.fillText("初心者キャラ診断 結果", 58, 86);
       ctx.fillStyle = "#19bce6";
       ctx.font = "900 24px 'Noto Sans JP', sans-serif";
-      ctx.fillText("CHARACTER SELECT", 62, 122);
+      ctx.fillText("TOP 8 CHARACTER SELECT", 62, 122);
 
       const images = await Promise.all(picks.map((pick) => loadShareImage(pick.image)));
       picks.forEach((pick, index) => {
-        const x = 58 + index * 374;
-        const y = 164;
-        const w = 332;
-        const h = 370;
+        const col = index % 4;
+        const row = Math.floor(index / 4);
+        const x = 58 + col * 280;
+        const y = 150 + row * 205;
+        const w = 250;
+        const h = 178;
         ctx.save();
-        roundRect(ctx, x, y, w, h, 24);
+        roundRect(ctx, x, y, w, h, 20);
         ctx.fillStyle = "rgba(255, 255, 255, .72)";
         ctx.fill();
         ctx.strokeStyle = "rgba(112, 184, 212, .42)";
@@ -1663,27 +1732,28 @@
 
         const img = images[index];
         if (img) {
-          drawCoverImage(ctx, img, x, y, w, 238);
+          drawCoverImage(ctx, img, x, y, w, 108);
           ctx.fillStyle = "rgba(255,255,255,.82)";
-          ctx.fillRect(x, y + 238, w, h - 238);
+          ctx.fillRect(x, y + 108, w, h - 108);
         } else {
-          const cardBg = ctx.createLinearGradient(x, y, x + w, y + 238);
+          const cardBg = ctx.createLinearGradient(x, y, x + w, y + 108);
           cardBg.addColorStop(0, "#ffffff");
           cardBg.addColorStop(1, "#9fe8f8");
           ctx.fillStyle = cardBg;
-          ctx.fillRect(x, y, w, 238);
+          ctx.fillRect(x, y, w, 108);
           ctx.fillStyle = "rgba(13, 47, 61, .25)";
-          ctx.font = "900 72px 'Noto Sans JP', sans-serif";
-          ctx.fillText(String(pick.name || "?").slice(0, 2), x + 100, y + 148);
+          ctx.font = "900 48px 'Noto Sans JP', sans-serif";
+          ctx.fillText(String(pick.name || "?").slice(0, 2), x + 78, y + 72);
         }
 
         ctx.restore();
         ctx.fillStyle = "#0d2f3d";
-        ctx.font = "900 34px 'Noto Sans JP', sans-serif";
-        ctx.fillText(`${index + 1}. ${pick.name}`, x + 22, y + 294);
+        ctx.font = "900 23px 'Noto Sans JP', sans-serif";
+        const name = `${index + 1}. ${pick.name}`;
+        ctx.fillText(name.length > 12 ? `${name.slice(0, 12)}…` : name, x + 14, y + 140);
         ctx.fillStyle = "#527283";
-        ctx.font = "800 22px 'Noto Sans JP', sans-serif";
-        ctx.fillText(`${pick.costLabel || ""} / ${pick.matchLabel || "PICK"} ${pick.match || "-"}%`, x + 22, y + 332);
+        ctx.font = "800 17px 'Noto Sans JP', sans-serif";
+        ctx.fillText(`${pick.costLabel || ""} / ${pick.matchLabel || "PICK"} ${pick.match || "-"}%`, x + 14, y + 166);
       });
 
       ctx.fillStyle = "#527283";
@@ -1709,10 +1779,17 @@
     });
     resetBtn.addEventListener("click", resetFlow);
     retryBtn.addEventListener("click", resetFlow);
+    costTabs.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-cost]");
+      if (!button) return;
+      activeCostFilter = button.dataset.cost || "all";
+      renderCostTabs();
+      renderResultCards();
+    });
     closeModal.addEventListener("click", () => modal.close());
     window.createResultShareBlob = createResultShareBlob;
     shareBtn.addEventListener("click", async () => {
-      const names = lastResults.slice(0, 3).map((c) => c.name).join("、");
+      const names = lastResults.slice(0, 8).map((c) => c.name).join("、");
       const text = `初心者キャラ診断のおすすめ候補: ${names}`;
       try {
         const blob = await createResultShareBlob();
