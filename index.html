@@ -1534,7 +1534,8 @@
         const count = key === "all"
           ? allRankedResults.length
           : allRankedResults.filter((candidate) => costKey(candidate) === key).length;
-        return `<button class="cost-tab${key === activeCostFilter ? " is-active" : ""}" type="button" data-cost="${key}">${costLabelFromKey(key)} <span>${count}</span></button>`;
+        const label = key === "all" ? `${costLabelFromKey(key)} ${count}` : costLabelFromKey(key);
+        return `<button class="cost-tab${key === activeCostFilter ? " is-active" : ""}" type="button" data-cost="${key}">${label}</button>`;
       }).join("");
     }
 
