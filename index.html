@@ -541,6 +541,45 @@
       line-height: 1.6;
     }
 
+    .avoid-panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .48);
+      padding: 14px;
+      margin: 14px 0;
+    }
+
+    .avoid-panel h3 {
+      margin: 0 0 10px;
+      color: var(--red);
+      font-size: 16px;
+    }
+
+    .avoid-list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .avoid-list li {
+      border: 1px solid rgba(232, 95, 122, .28);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .58);
+      padding: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .avoid-list b {
+      display: block;
+      color: #7d1d31;
+      margin-bottom: 4px;
+    }
+
     .compare-card p {
       margin: 0;
       color: var(--muted);
@@ -815,7 +854,8 @@
       .insight-panel,
       .compare-panel,
       .extra-panel,
-      .history-panel {
+      .history-panel,
+      .avoid-list {
         grid-template-columns: 1fr;
       }
     }
@@ -836,6 +876,7 @@
       .compare-panel,
       .extra-panel,
       .history-panel,
+      .avoid-list,
       .modal {
         grid-template-columns: 1fr;
       }
@@ -906,6 +947,7 @@
           <div class="compare-panel" id="comparePanel"></div>
           <div class="extra-panel" id="extraPanel"></div>
           <div class="history-panel" id="historyPanel"></div>
+          <div class="avoid-panel" id="avoidPanel"></div>
           <div class="cost-tabs" id="costTabs" aria-label="コスト別おすすめ候補"></div>
           <div class="result-grid" id="resultGrid" aria-label="診断結果のおすすめ候補8体"></div>
         </section>
@@ -1184,6 +1226,7 @@
     const comparePanel = document.getElementById("comparePanel");
     const extraPanel = document.getElementById("extraPanel");
     const historyPanel = document.getElementById("historyPanel");
+    const avoidPanel = document.getElementById("avoidPanel");
     const costTabs = document.getElementById("costTabs");
     const resultGrid = document.getElementById("resultGrid");
     const modal = document.getElementById("modal");
@@ -1591,6 +1634,49 @@
       }).join("");
     }
 
+    function avoidReasonsFor(candidate) {
+      const reasons = [];
+      const axes = candidate.axes || {};
+      if (Number(axes.difficulty || 3) > Number(answers.difficulty || 3) + 1) reasons.push("操作難度が希望より高い");
+      if (Math.abs(Number(axes.rangeStyle || 3) - Number(answers.rangeStyle || 3)) >= 3) reasons.push("射撃/格闘の好みが遠い");
+      if (Math.abs(Number(axes.aggression || 3) - Number(answers.aggression || 3)) >= 3) reasons.push("攻め/逃げの方針が遠い");
+      if (Math.abs(Number(axes.independence || 3) - Number(answers.independence || 3)) >= 3) reasons.push("連携/単独の好みが遠い");
+      if (Number(axes.beginnerFit || 3) <= 1) reasons.push("初心者適性が低い");
+      return reasons.slice(0, 2);
+    }
+
+    function avoidCandidates() {
+      const picked = new Set(lastResults.map((candidate) => candidate.id));
+      return allRankedResults
+        .filter((candidate) => !picked.has(candidate.id))
+        .map((candidate) => ({ ...candidate, avoidReasons: avoidReasonsFor(candidate) }))
+        .filter((candidate) => candidate.avoidReasons.length)
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 3);
+    }
+
+    function renderAvoidPanel() {
+      const avoid = avoidCandidates();
+      if (!avoid.length) {
+        avoidPanel.innerHTML = `
+          <h3>今は避けた方がいい候補</h3>
+          <p class="history-empty">大きく外れている候補は少なめです。上位候補から操作感で選んでよさそうです。</p>
+        `;
+        return;
+      }
+      avoidPanel.innerHTML = `
+        <h3>今は避けた方がいい候補</h3>
+        <ul class="avoid-list">
+          ${avoid.map((candidate) => `
+            <li>
+              <b>${esc(candidate.name)}</b>
+              <span>${esc(candidate.avoidReasons.join(" / "))}</span>
+            </li>
+          `).join("")}
+        </ul>
+      `;
+    }
+
     function renderInsights() {
       const prefs = preferenceSummary();
       const top = lastResults[0];
@@ -1639,6 +1725,7 @@
       renderExtras();
       saveCurrentHistory();
       renderHistory();
+      renderAvoidPanel();
       renderCostTabs();
       renderResultCards();
     }
@@ -1834,6 +1921,9 @@
     async function createResultShareBlob() {
       const picks = lastResults.slice(0, 8);
       if (!picks.length) return null;
+      const style = playstyleProfile();
+      const now = new Date();
+      const dateText = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       const canvas = document.createElement("canvas");
       canvas.width = 1200;
       canvas.height = 630;
@@ -1868,6 +1958,12 @@
       ctx.fillStyle = "#19bce6";
       ctx.font = "900 24px 'Noto Sans JP', sans-serif";
       ctx.fillText("TOP 8 CHARACTER SELECT", 62, 122);
+      ctx.fillStyle = "#315f73";
+      ctx.font = "900 24px 'Noto Sans JP', sans-serif";
+      const styleText = `TYPE: ${style.name}`;
+      ctx.fillText(styleText.length > 34 ? `${styleText.slice(0, 34)}…` : styleText, 430, 88);
+      ctx.font = "800 18px 'Noto Sans JP', sans-serif";
+      ctx.fillText(dateText, 430, 120);
 
       const images = await Promise.all(picks.map((pick) => loadShareImage(pick.image)));
       picks.forEach((pick, index) => {
@@ -1914,6 +2010,7 @@
       ctx.fillStyle = "#527283";
       ctx.font = "800 22px 'Noto Sans JP', sans-serif";
       ctx.fillText("Starwardall Character Finder", 58, 585);
+      ctx.fillText(`TYPE: ${style.name}`.slice(0, 46), 360, 585);
 
       return new Promise((resolve) => canvas.toBlob(resolve, "image/png", .92));
     }
