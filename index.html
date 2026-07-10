@@ -789,7 +789,7 @@
             </div>
             <div class="actions">
               <button class="btn strong" type="button" id="retryBtn">もう一度</button>
-              <button class="btn share" type="button" id="shareBtn">結果をコピー</button>
+              <button class="btn share" type="button" id="shareBtn">結果SSをコピー</button>
             </div>
           </div>
           <div class="insight-panel" id="insightPanel"></div>
@@ -982,7 +982,9 @@
         priority: Number(item.priority || 0),
         rankScore: Number(item.rankScore || 0),
         featured: !!item.featured,
-        image: item.image && item.image.startsWith("http") ? item.image : `https://starward-lab.com${item.image || ""}`,
+        image: item.image && item.image.startsWith("/images/characters/tier/")
+          ? `assets/characters/${item.image.split("/").pop()}`
+          : item.image && item.image.startsWith("http") ? item.image : `https://starward-lab.com${item.image || ""}`,
         axes: item.axes || {},
         beginnerFit: item.axes?.beginnerFit || 3,
         summary: item.summary || "",
@@ -1572,6 +1574,125 @@
       window.setTimeout(() => toast.classList.remove("show"), 1400);
     }
 
+    function loadShareImage(src) {
+      return new Promise((resolve) => {
+        if (!src) {
+          resolve(null);
+          return;
+        }
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.decoding = "async";
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    }
+
+    function roundRect(ctx, x, y, width, height, radius) {
+      const r = Math.min(radius, width / 2, height / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + width, y, x + width, y + height, r);
+      ctx.arcTo(x + width, y + height, x, y + height, r);
+      ctx.arcTo(x, y + height, x, y, r);
+      ctx.arcTo(x, y, x + width, y, r);
+      ctx.closePath();
+    }
+
+    function drawCoverImage(ctx, img, x, y, width, height) {
+      const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+      const sw = width / scale;
+      const sh = height / scale;
+      const sx = (img.naturalWidth - sw) / 2;
+      const sy = (img.naturalHeight - sh) / 2;
+      ctx.drawImage(img, sx, sy, sw, sh, x, y, width, height);
+    }
+
+    async function createResultShareBlob() {
+      const picks = lastResults.slice(0, 3);
+      if (!picks.length) return null;
+      const canvas = document.createElement("canvas");
+      canvas.width = 1200;
+      canvas.height = 630;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return null;
+
+      const bg = ctx.createLinearGradient(0, 0, 1200, 630);
+      bg.addColorStop(0, "#f8feff");
+      bg.addColorStop(.52, "#dff8ff");
+      bg.addColorStop(1, "#d8fff5");
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, 1200, 630);
+
+      ctx.strokeStyle = "rgba(25, 188, 230, .20)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x <= 1200; x += 60) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, 630);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= 630; y += 60) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(1200, y);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#0d2f3d";
+      ctx.font = "900 54px 'Noto Sans JP', sans-serif";
+      ctx.fillText("初心者キャラ診断 結果", 58, 86);
+      ctx.fillStyle = "#19bce6";
+      ctx.font = "900 24px 'Noto Sans JP', sans-serif";
+      ctx.fillText("CHARACTER SELECT", 62, 122);
+
+      const images = await Promise.all(picks.map((pick) => loadShareImage(pick.image)));
+      picks.forEach((pick, index) => {
+        const x = 58 + index * 374;
+        const y = 164;
+        const w = 332;
+        const h = 370;
+        ctx.save();
+        roundRect(ctx, x, y, w, h, 24);
+        ctx.fillStyle = "rgba(255, 255, 255, .72)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(112, 184, 212, .42)";
+        ctx.stroke();
+        ctx.clip();
+
+        const img = images[index];
+        if (img) {
+          drawCoverImage(ctx, img, x, y, w, 238);
+          ctx.fillStyle = "rgba(255,255,255,.82)";
+          ctx.fillRect(x, y + 238, w, h - 238);
+        } else {
+          const cardBg = ctx.createLinearGradient(x, y, x + w, y + 238);
+          cardBg.addColorStop(0, "#ffffff");
+          cardBg.addColorStop(1, "#9fe8f8");
+          ctx.fillStyle = cardBg;
+          ctx.fillRect(x, y, w, 238);
+          ctx.fillStyle = "rgba(13, 47, 61, .25)";
+          ctx.font = "900 72px 'Noto Sans JP', sans-serif";
+          ctx.fillText(String(pick.name || "?").slice(0, 2), x + 100, y + 148);
+        }
+
+        ctx.restore();
+        ctx.fillStyle = "#0d2f3d";
+        ctx.font = "900 34px 'Noto Sans JP', sans-serif";
+        ctx.fillText(`${index + 1}. ${pick.name}`, x + 22, y + 294);
+        ctx.fillStyle = "#527283";
+        ctx.font = "800 22px 'Noto Sans JP', sans-serif";
+        ctx.fillText(`${pick.costLabel || ""} / ${pick.matchLabel || "PICK"} ${pick.match || "-"}%`, x + 22, y + 332);
+      });
+
+      ctx.fillStyle = "#527283";
+      ctx.font = "800 22px 'Noto Sans JP', sans-serif";
+      ctx.fillText("Starwardall Character Finder", 58, 585);
+
+      return new Promise((resolve) => canvas.toBlob(resolve, "image/png", .92));
+    }
+
     backBtn.addEventListener("click", () => {
       if (step > 0) {
         delete answers[activeQuestions[step - 1].id];
@@ -1589,14 +1710,37 @@
     resetBtn.addEventListener("click", resetFlow);
     retryBtn.addEventListener("click", resetFlow);
     closeModal.addEventListener("click", () => modal.close());
+    window.createResultShareBlob = createResultShareBlob;
     shareBtn.addEventListener("click", async () => {
       const names = lastResults.slice(0, 3).map((c) => c.name).join("、");
       const text = `初心者キャラ診断のおすすめ候補: ${names}`;
       try {
+        const blob = await createResultShareBlob();
+        if (blob) {
+          if (navigator.clipboard && window.ClipboardItem) {
+            try {
+              await navigator.clipboard.write([
+                new ClipboardItem({ "image/png": blob })
+              ]);
+              showToast("結果SSをコピーしました");
+              return;
+            } catch (_) {
+              // Clipboard image writes can be blocked by browser policy; open the PNG instead.
+            }
+          }
+          window.open(URL.createObjectURL(blob), "_blank", "noopener,noreferrer");
+          showToast("結果SSを開きました");
+          return;
+        }
         await navigator.clipboard.writeText(text);
-        showToast("結果をコピーしました");
-      } catch {
-        showToast(text);
+        showToast("結果テキストをコピーしました");
+      } catch (error) {
+        try {
+          await navigator.clipboard.writeText(text);
+          showToast("画像コピー不可のためテキストをコピーしました");
+        } catch {
+          showToast(text);
+        }
       }
     });
 
