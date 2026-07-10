@@ -508,6 +508,39 @@
       padding-bottom: 7px;
     }
 
+    .history-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .history-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .48);
+      padding: 12px;
+    }
+
+    .history-card strong {
+      display: block;
+      color: #0b3445;
+      margin-bottom: 6px;
+    }
+
+    .history-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .history-empty {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
     .compare-card p {
       margin: 0;
       color: var(--muted);
@@ -777,7 +810,8 @@
 
       .insight-panel,
       .compare-panel,
-      .extra-panel {
+      .extra-panel,
+      .history-panel {
         grid-template-columns: 1fr;
       }
     }
@@ -797,6 +831,7 @@
       .insight-panel,
       .compare-panel,
       .extra-panel,
+      .history-panel,
       .modal {
         grid-template-columns: 1fr;
       }
@@ -856,6 +891,7 @@
           <div class="insight-panel" id="insightPanel"></div>
           <div class="compare-panel" id="comparePanel"></div>
           <div class="extra-panel" id="extraPanel"></div>
+          <div class="history-panel" id="historyPanel"></div>
           <div class="cost-tabs" id="costTabs" aria-label="コスト別おすすめ候補"></div>
           <div class="result-grid" id="resultGrid" aria-label="診断結果のおすすめ候補8体"></div>
         </section>
@@ -1133,6 +1169,7 @@
     const insightPanel = document.getElementById("insightPanel");
     const comparePanel = document.getElementById("comparePanel");
     const extraPanel = document.getElementById("extraPanel");
+    const historyPanel = document.getElementById("historyPanel");
     const costTabs = document.getElementById("costTabs");
     const resultGrid = document.getElementById("resultGrid");
     const modal = document.getElementById("modal");
@@ -1488,6 +1525,58 @@
       `;
     }
 
+    const historyKey = "starwardallDiagnosisHistory";
+
+    function readHistory() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(historyKey) || "[]");
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function saveCurrentHistory() {
+      const style = playstyleProfile();
+      const entry = {
+        savedAt: new Date().toISOString(),
+        playstyle: style.name,
+        top: lastResults.slice(0, 3).map((candidate) => ({
+          name: candidate.name,
+          cost: candidate.costLabel || `${candidate.cost}コスト`,
+          match: candidate.match,
+          label: candidate.matchLabel || "PICK"
+        }))
+      };
+      const history = readHistory();
+      history.unshift(entry);
+      localStorage.setItem(historyKey, JSON.stringify(history.slice(0, 6)));
+    }
+
+    function formatHistoryTime(iso) {
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "前回";
+      return `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+    }
+
+    function renderHistory() {
+      const history = readHistory().slice(1, 3);
+      if (!history.length) {
+        historyPanel.innerHTML = `<section class="history-card"><strong>直近2件の履歴</strong><p class="history-empty">次回以降、ここに前回の診断結果が表示されます。</p></section>`;
+        return;
+      }
+      historyPanel.innerHTML = history.map((entry, index) => {
+        const picks = (entry.top || []).map((item) => `${item.name} ${item.match || "-"}%`).join(" / ");
+        return `
+          <section class="history-card">
+            <strong>${index === 0 ? "前回" : "前々回"}: ${esc(entry.playstyle || "診断結果")}</strong>
+            <p>${esc(formatHistoryTime(entry.savedAt))}</p>
+            <p>${esc(picks || "候補なし")}</p>
+          </section>
+        `;
+      }).join("");
+    }
+
     function renderInsights() {
       const prefs = preferenceSummary();
       const top = lastResults[0];
@@ -1534,6 +1623,8 @@
       resultPanel.classList.add("show");
       renderInsights();
       renderExtras();
+      saveCurrentHistory();
+      renderHistory();
       renderCostTabs();
       renderResultCards();
     }
@@ -1664,6 +1755,13 @@
       }
       if (modal.open) modal.close();
       modal.showModal();
+      modal.scrollTop = 0;
+      modalBody.scrollTop = 0;
+      modal.querySelector(".modal-shell")?.scrollTo(0, 0);
+      requestAnimationFrame(() => {
+        modal.scrollTop = 0;
+        modalBody.scrollTop = 0;
+      });
     }
 
     function resetFlow() {
