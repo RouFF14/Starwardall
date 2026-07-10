@@ -1,0 +1,1606 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>初心者キャラ診断</title>
+  <style>
+    :root {
+      --bg: #eafaff;
+      --panel: rgba(255, 255, 255, .42);
+      --panel-2: rgba(255, 255, 255, .28);
+      --ink: #0d2f3d;
+      --muted: #527283;
+      --line: rgba(112, 184, 212, .34);
+      --cyan: #19bce6;
+      --yellow: #4dd7c8;
+      --red: #e85f7a;
+      --green: #27c99b;
+      --shadow: 0 26px 80px rgba(44, 128, 164, .22);
+      font-family: "Noto Sans JP", "Yu Gothic", Meiryo, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, .72), rgba(177, 236, 250, .48) 45%, rgba(209, 255, 244, .64)),
+        var(--bg);
+      background-size: auto;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, .42) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255, 255, 255, .34) 1px, transparent 1px);
+      background-size: 54px 54px;
+      opacity: .55;
+    }
+
+    button { font: inherit; }
+
+    .shell {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 22px 0;
+      min-height: 100vh;
+      display: grid;
+      align-items: center;
+    }
+
+    .arena {
+      position: relative;
+      overflow: hidden;
+      min-height: calc(100vh - 44px);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, .72), rgba(215, 248, 255, .34)),
+        var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 24px clamp(18px, 4vw, 44px);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, .48), rgba(255, 255, 255, .12));
+    }
+
+    .kicker {
+      margin: 0 0 6px;
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .12em;
+    }
+
+    h1, h2, h3, p { letter-spacing: 0; }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 64px);
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .status {
+      min-width: 150px;
+      text-align: right;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .stage {
+      padding: clamp(18px, 4vw, 46px);
+      padding-bottom: clamp(18px, 4vw, 46px);
+    }
+
+    .topline {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, .18);
+      overflow: hidden;
+    }
+
+    .progress i {
+      display: block;
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan), var(--yellow));
+      transition: width .2s ease;
+    }
+
+    .question-card,
+    .result-panel {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .68), rgba(220, 248, 255, .30)),
+        rgba(255, 255, 255, .36);
+      padding: clamp(18px, 4vw, 34px);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .70), 0 10px 24px rgba(44, 128, 164, .10);
+    }
+
+    .question-card h2 {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 44px);
+      line-height: 1.25;
+    }
+
+    .question-card .desc {
+      max-width: 760px;
+      margin: 14px 0 24px;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .precision-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(25, 188, 230, .28);
+      border-radius: 999px;
+      padding: 7px 10px;
+      color: #087b94;
+      background: rgba(255, 255, 255, .42);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .scale-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .choice {
+      min-height: 112px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: linear-gradient(160deg, rgba(255, 255, 255, .60), rgba(207, 244, 255, .24));
+      color: var(--ink);
+      cursor: pointer;
+      padding: 12px;
+      text-align: left;
+      transition: border-color .14s ease, background .14s ease;
+    }
+
+    .choice:hover,
+    .choice:focus-visible {
+      border-color: var(--cyan);
+      background: linear-gradient(160deg, rgba(255, 255, 255, .82), rgba(136, 232, 249, .30));
+      outline: none;
+    }
+
+    .choice b {
+      display: block;
+      color: #087b94;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .choice span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .btn {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .46);
+      color: var(--ink);
+      padding: 0 15px;
+      cursor: pointer;
+      font-weight: 900;
+    }
+
+    .btn:hover,
+    .btn:focus-visible {
+      border-color: var(--cyan);
+      outline: none;
+    }
+
+    .btn:disabled {
+      opacity: .42;
+      cursor: not-allowed;
+    }
+
+    .btn.strong {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      color: #ffffff;
+      box-shadow: 0 6px 14px rgba(25, 188, 230, .16);
+    }
+
+    .btn.share {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: #063c43;
+    }
+
+    .result-panel { display: none; }
+    .result-panel.show { display: block; }
+    .question-screen.hidden { display: none; }
+
+    .result-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+      margin-bottom: 18px;
+    }
+
+    .result-head h2 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.1;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .insight-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .insight-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .46);
+      padding: 14px;
+    }
+
+    .insight-card h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: var(--yellow);
+    }
+
+    .profile-grid {
+      display: grid;
+      gap: 9px;
+    }
+
+    .profile-row {
+      display: grid;
+      grid-template-columns: 90px 1fr 90px;
+      gap: 10px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .profile-row i {
+      position: relative;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .10);
+    }
+
+    .profile-row i::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: var(--pos);
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--cyan);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 8px rgba(56, 215, 255, .35);
+    }
+
+    .plan-list {
+      display: grid;
+      gap: 9px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .plan-list li {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr);
+      gap: 9px;
+      align-items: start;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .plan-list b {
+      display: grid;
+      place-items: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      background: rgba(255, 209, 102, .16);
+      color: var(--yellow);
+      font-size: 12px;
+    }
+
+    .compare-panel {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .compare-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(224, 255, 249, .48);
+      padding: 12px;
+      min-height: 124px;
+    }
+
+    .compare-card strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--green);
+      font-size: 13px;
+    }
+
+    .extra-panel {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 14px 0;
+    }
+
+    .extra-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .46);
+      padding: 14px;
+    }
+
+    .extra-card h3 {
+      margin: 0 0 10px;
+      color: var(--yellow);
+      font-size: 16px;
+    }
+
+    .playstyle-name {
+      margin: 0;
+      font-size: clamp(24px, 4vw, 38px);
+      line-height: 1.15;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .playstyle-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 13px;
+    }
+
+    .warning-list,
+    .exclude-list,
+    .cost-list,
+    .roadmap-list {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .warning-list li,
+    .exclude-list li,
+    .cost-list li,
+    .roadmap-list li {
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 13px;
+    }
+
+    .warning-list li {
+      border-left: 3px solid var(--red);
+      padding-left: 9px;
+    }
+
+    .roadmap-list li {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 9px;
+    }
+
+    .roadmap-list b,
+    .cost-list b,
+    .exclude-list b {
+      color: var(--ink);
+    }
+
+    .cost-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, .16);
+      padding-bottom: 7px;
+    }
+
+    .compare-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 13px;
+    }
+
+    .card {
+      position: relative;
+      min-height: 280px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .52);
+      cursor: pointer;
+      text-align: left;
+      color: var(--ink);
+      padding: 0;
+    }
+
+    .card img {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 150px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(151, 232, 250, .26));
+    }
+
+    .card-art {
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 150px;
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(151, 232, 250, .26));
+      color: rgba(13, 47, 61, .22);
+      font-size: 42px;
+      font-weight: 900;
+    }
+
+    .card-body {
+      padding: 12px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .58), rgba(226, 250, 255, .86));
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .card h3 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .rank {
+      display: inline-grid;
+      place-items: center;
+      min-width: 38px;
+      min-height: 30px;
+      border-radius: 6px;
+      background: var(--yellow);
+      color: #063c43;
+      font-weight: 900;
+    }
+
+    .meta {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .tags span {
+      border: 1px solid rgba(56, 215, 255, .28);
+      border-radius: 999px;
+      padding: 4px 7px;
+      color: #b9eaff;
+      background: rgba(56, 215, 255, .07);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .match {
+      margin-top: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(64, 155, 187, .12);
+      overflow: hidden;
+    }
+
+    .match i {
+      display: block;
+      width: var(--match);
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+    }
+
+    dialog {
+      width: min(720px, calc(100% - 24px));
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 0;
+      color: var(--ink);
+      background: rgba(240, 253, 255, .82);
+      box-shadow: var(--shadow);
+    }
+
+    dialog::backdrop {
+      background: rgba(20, 77, 97, .38);
+    }
+
+    .modal {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .modal img {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, .34);
+    }
+
+    .modal h3 {
+      margin: 0 0 8px;
+      font-size: 30px;
+    }
+
+    .modal p,
+    .modal li {
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .modal ul {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    .breakdown {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .breakdown-row {
+      display: grid;
+      grid-template-columns: 92px 1fr 46px;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .score-components {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .score-components span {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, .38);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .breakdown-row i {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .10);
+      overflow: hidden;
+    }
+
+    .breakdown-row b {
+      display: block;
+      width: var(--axis-fit);
+      height: 100%;
+      background: linear-gradient(90deg, var(--yellow), var(--cyan));
+    }
+
+    .close-row {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 20px 20px;
+    }
+
+    .detail-list-title {
+      margin: 14px 0 4px;
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 20px;
+      transform: translateX(-50%) translateY(12px);
+      opacity: 0;
+      pointer-events: none;
+      background: #f8fafc;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 800;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 900px) {
+      .choice-grid,
+      .result-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .insight-panel,
+      .compare-panel,
+      .extra-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 16px, 1180px); padding: 8px 0; }
+      .arena { min-height: calc(100vh - 16px); }
+      header,
+      .stage { padding: 16px; }
+      header,
+      .result-head {
+        display: grid;
+      }
+      .status { text-align: left; }
+      .choice-grid,
+      .result-grid,
+      .insight-panel,
+      .compare-panel,
+      .extra-panel,
+      .modal {
+        grid-template-columns: 1fr;
+      }
+      .choice { min-height: 86px; }
+      .topline { grid-template-columns: 1fr; }
+      .actions { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="arena" aria-labelledby="title">
+      <header>
+        <div>
+          <p class="kicker">BEGINNER FLOW</p>
+          <h1 id="title">初心者キャラ診断</h1>
+        </div>
+        <div class="status" id="status">TARGET SELECT // 8 PICKS</div>
+      </header>
+
+      <div class="stage">
+        <section class="question-screen" id="questionScreen">
+          <div class="topline">
+            <span id="stepText"></span>
+            <div class="progress" aria-hidden="true"><i id="progress"></i></div>
+            <span>LIVE SELECT</span>
+          </div>
+
+          <article class="question-card" aria-live="polite">
+            <p class="kicker" id="axisText"></p>
+            <h2 id="questionTitle" tabindex="-1"></h2>
+            <p class="desc" id="questionDesc"></p>
+            <div class="scale-labels">
+              <span id="leftLabel"></span>
+              <span id="rightLabel"></span>
+            </div>
+            <div class="choice-grid" id="choiceGrid"></div>
+          </article>
+
+          <div class="actions">
+            <button class="btn" type="button" id="backBtn">戻る</button>
+            <button class="btn" type="button" id="resetBtn">最初から</button>
+          </div>
+        </section>
+
+        <section class="result-panel" id="resultPanel" aria-live="polite">
+          <div class="result-head">
+            <div>
+              <p class="kicker">CHARACTER SELECT</p>
+              <h2>おすすめ候補</h2>
+            </div>
+            <div class="actions">
+              <button class="btn strong" type="button" id="retryBtn">もう一度</button>
+              <button class="btn share" type="button" id="shareBtn">結果をコピー</button>
+            </div>
+          </div>
+          <div class="insight-panel" id="insightPanel"></div>
+          <div class="compare-panel" id="comparePanel"></div>
+          <div class="extra-panel" id="extraPanel"></div>
+          <div class="result-grid" id="resultGrid" aria-label="診断結果のおすすめ候補8体"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="modal">
+    <div class="modal" id="modalBody"></div>
+    <div class="close-row"><button class="btn" type="button" id="closeModal">閉じる</button></div>
+  </dialog>
+  <div class="toast" id="toast">コピーしました</div>
+
+  <script src="starward-source-data.js"></script>
+  <script>
+    const questions = [
+      {
+        id: "rangeStyle",
+        axis: "RANGE STYLE",
+        title: "射撃と格闘、どちらの比重が好みですか？",
+        desc: "遠くから撃ち合うか、近距離で押し込むかを決めます。最初の方向性を大きく分ける質問です。",
+        left: "射撃",
+        right: "格闘",
+        options: [
+          ["1 射撃重視", "遠距離から撃ち合いたい", 1],
+          ["2 やや射撃", "射撃中心で近距離も少し触る", 2],
+          ["3 どちらも", "射撃も格闘も普通に使いたい", 3],
+          ["4 やや格闘", "近距離の圧も欲しい", 4],
+          ["5 格闘重視", "接近戦で倒したい", 5]
+        ]
+      },
+      {
+        id: "difficulty",
+        axis: "DIFFICULTY",
+        title: "操作難易度はどこまで許容できますか？",
+        desc: "難しいキャラほど練習量が必要です。最初は負けた理由が見えやすいキャラほど続けやすくなります。",
+        left: "簡単",
+        right: "難しい",
+        options: [
+          ["1 簡単がいい", "まずは動かしやすさ重視", 1],
+          ["2 やや簡単", "少し覚える程度なら可", 2],
+          ["3 普通まで", "標準的な難度なら問題ない", 3],
+          ["4 難しめも可", "練習して伸びるキャラも候補", 4],
+          ["5 難しくても可", "強いなら複雑でも触る", 5]
+        ]
+      },
+      {
+        id: "aggression",
+        axis: "AGGRESSION",
+        title: "逃げと攻め、どちらが好きですか？",
+        desc: "生存重視で受けるか、自分から圧をかけるかを選びます。どちらが偉いではなく、向き不向きの話です。",
+        left: "逃げ",
+        right: "攻め",
+        options: [
+          ["1 逃げ重視", "まず落ちないことを優先したい", 1],
+          ["2 やや逃げ", "安定しながら反撃したい", 2],
+          ["3 状況次第", "攻守の切り替えを重視", 3],
+          ["4 やや攻め", "チャンスでは前に出たい", 4],
+          ["5 攻め重視", "自分から試合を壊したい", 5]
+        ]
+      },
+      {
+        id: "popularity",
+        axis: "POPULARITY",
+        title: "人気キャラとマイナーキャラ、どちらが好きですか？",
+        desc: "情報量が多いキャラを選ぶか、少し外したキャラを選ぶかの好みです。性能評価とは別軸です。",
+        left: "人気",
+        right: "マイナー",
+        options: [
+          ["1 人気キャラ", "よく見かける候補がいい", 1],
+          ["2 やや人気", "情報が集めやすい方がいい", 2],
+          ["3 どちらでも", "人気度はあまり気にしない", 3],
+          ["4 ややマイナー", "少し外した候補がいい", 4],
+          ["5 マイナーキャラ", "あまり見ないキャラを使いたい", 5]
+        ]
+      },
+      {
+        id: "independence",
+        axis: "TEAM STYLE",
+        title: "単独で動かすキャラと、連携が重要なキャラなら？",
+        desc: "自分で試合を動かす力を重視するか、相方との連携で勝つ形を重視するかを選びます。",
+        left: "連携",
+        right: "単独",
+        options: [
+          ["1 連携重視", "相方と合わせて勝ちたい", 1],
+          ["2 やや連携", "連携を意識した立ち回りが好き", 2],
+          ["3 どちらでも", "編成に合わせて動きたい", 3],
+          ["4 やや単独", "自分で仕掛ける場面も欲しい", 4],
+          ["5 単独重視", "自分で試合を動かしたい", 5]
+        ]
+      }
+    ];
+
+    const precisionQuestions = [
+      {
+        id: "costComfort",
+        axis: "COST COMFORT",
+        title: "最初に使うなら、どのコスト帯が落ち着きますか？",
+        desc: "候補が拮抗しているため、責任の重さや立ち回りの役割で最後に補正します。",
+        left: "低コスト",
+        right: "高コスト",
+        options: [
+          ["1 低コストから", "まずは負担を軽くして慣れたい", 1],
+          ["2 やや低め", "2.0前後が落ち着く", 2],
+          ["3 どちらでも", "コストより操作感で選ぶ", 3],
+          ["4 やや高め", "主役寄りのキャラも触りたい", 4],
+          ["5 高コストから", "試合を背負うキャラを使いたい", 5]
+        ]
+      },
+      {
+        id: "forgiveness",
+        axis: "MISTAKE TOLERANCE",
+        title: "ミスした時のリカバリー性能はどれくらい欲しいですか？",
+        desc: "同じ相性なら、安定して学びやすい候補か、尖った候補かを分けます。",
+        left: "安定",
+        right: "尖り",
+        options: [
+          ["1 安定最優先", "ミスしても試合を戻しやすい方がいい", 1],
+          ["2 やや安定", "扱いやすさを少し重視", 2],
+          ["3 普通", "安定と爆発力の中間", 3],
+          ["4 やや尖り", "癖があっても強みが欲しい", 4],
+          ["5 尖り歓迎", "難しくても個性が強い方がいい", 5]
+        ]
+      },
+      {
+        id: "growthStyle",
+        axis: "GROWTH STYLE",
+        title: "上達の仕方として近いのはどちらですか？",
+        desc: "すぐ使えるキャラか、練習で伸びるキャラかを最後に調整します。",
+        left: "即戦力",
+        right: "練習伸び",
+        options: [
+          ["1 すぐ勝ちたい", "初日から形になる方がいい", 1],
+          ["2 やや即戦力", "少し練習すれば動かせるくらい", 2],
+          ["3 中間", "勝ちやすさも伸びしろも欲しい", 3],
+          ["4 やや伸びしろ", "練習で強くなる感覚が好き", 4],
+          ["5 伸びしろ重視", "難しくても長く使いたい", 5]
+        ]
+      }
+    ];
+
+    const imgBase = "https://starward-lab.com/images/characters/tier/";
+    const fallbackCandidates = [
+      c("cherubim", "ケルビム", "3.0", "A+", "cherub.webp", [3, 3, 3, 2, 3], 4, "射撃と格闘を切り替えやすいバランス型。最初の基準キャラとして触りやすい候補です。"),
+      c("hikari", "ヒカリ", "3.0", "A", "hikari.webp", [2, 2, 2, 3, 2], 4, "やや射撃寄りで安定しやすい候補。扱いやすさと連携感を両立できます。"),
+      c("raziel", "ラジエル", "3.0", "B+", "rasiel.webp", [4, 2, 4, 2, 4], 4, "前に出る場面を作りやすい格闘寄り候補。攻めたい初心者にも比較的入りやすいです。"),
+      c("suzuran", "スズラン", "3.0", "B+", "convallaria.webp", [2, 2, 2, 3, 2], 4, "射撃寄りで安定重視。まず落ち着いてゲームを覚えたい人向けです。"),
+      c("line", "ライン", "3.0", "A+", "rhine.webp", [1, 3, 3, 1, 4], 3, "射撃重視ながら試合を動かす力もある候補。人気寄りを使いたい人にも合います。"),
+      c("rota", "ロータ", "3.0", "A", "rota.webp", [4, 3, 5, 3, 4], 3, "やや格闘寄りで攻め重視。チャンスで前に出たい人向けです。"),
+      c("elfin", "エルフィン", "3.0", "A", "elfin.webp", [1, 4, 1, 5, 5], 2, "射撃、逃げ、単独色が強い候補。癖はありますが好みが合うと楽しいタイプです。"),
+      c("cavalry", "キャヴァリー", "3.0", "B+", "cavalry.webp", [1, 4, 2, 4, 2], 2, "射撃重視で安定寄り。少し慣れが必要ですが、距離管理を学びやすい候補です。"),
+      c("griffin", "グリフィン", "3.0", "B+", "griffin.webp", [4, 6, 2, 4, 4], 1, "格闘寄りで難度は高め。好きで選ぶなら覚悟込みで楽しい上級寄り候補です。"),
+      c("kage", "影", "3.0", "A+", "shadow.webp", [4, 4, 5, 2, 1], 1, "格闘寄りで攻め重視。連携も絡むため、最初から使うなら練習前提です。"),
+      c("shuuu", "シュウウ", "3.0", "要研究", "qiuyu.webp", [3, 4, 2, 4, 4], 2, "バランス型で安定寄り。少し癖があり、見た目や動きが刺さる人向けです。"),
+      c("remiel", "レミエル", "2.5", "S", "remiel.webp", [2, 2, 3, 1, 3], 5, "初心者適性が高い万能寄り候補。迷った時の選択肢としてかなり安定します。"),
+      c("alice", "アリス", "2.5", "B+", "alice.webp", [2, 3, 2, 3, 2], 3, "射撃寄りで連携も意識しやすい候補。標準的な操作感を求める人向けです。"),
+      c("valkia", "ヴァルキア", "2.5", "B+", "valkia.webp", [4, 3, 4, 3, 4], 3, "攻めと単独行動の感触を持つ候補。自分から仕掛けたい時に合います。"),
+      c("cygnus", "シグナス", "2.5", "B+", "cygnus.webp", [1, 3, 2, 4, 3], 3, "射撃寄りで落ち着いた展開を作りやすい候補。情報量より好み重視の人にも。"),
+      c("sky-saber", "スカイセーバー", "2.5", "B+", "sky-saber.webp", [4, 3, 4, 2, 4], 3, "格闘寄りで前に出る楽しさがあります。中難度まで許容できる人向けです。"),
+      c("dead-alive", "デッド・アライブ", "2.5", "B+", "dead-alive.webp", [3, 4, 4, 4, 5], 2, "単独で動かす感触が強めの候補。癖があるキャラを触りたい人向けです。"),
+      c("baselard", "バーゼラルド", "2.5", "B+", "baselard.webp", [1, 3, 2, 3, 2], 3, "射撃重視で連携も取りやすい候補。距離を保って戦いたい人に向きます。"),
+      c("reki", "レキ", "2.5", "B+", "reki.webp", [3, 2, 3, 4, 3], 4, "標準寄りで扱いやすさを重視した候補。突出より丸さが欲しい人向けです。"),
+      c("xiaoling", "シャオリン", "2.5", "B", "xiaoling.webp", [5, 4, 5, 5, 4], 2, "格闘、攻め、マイナー寄り。強い好みがある人に刺さるタイプです。"),
+      c("nora", "ノーラ", "2.5", "B", "nora.webp", [2, 3, 1, 4, 2], 3, "逃げ寄りで安定重視。じっくり試合を見る人に合いやすい候補です。"),
+      c("eva", "エヴァ", "2.5", "C", "eva.webp", [3, 3, 3, 5, 3], 2, "マイナー寄りのバランス型。性能より愛着や個性で選びたい人向けです。")
+    ];
+
+    function c(id, name, cost, rank, image, axes, fit, summary) {
+      return {
+        id, name, cost, rank, image: imgBase + image,
+        axes: { rangeStyle: axes[0], difficulty: axes[1], aggression: axes[2], popularity: axes[3], independence: axes[4] },
+        beginnerFit: fit,
+        summary
+      };
+    }
+
+    const candidates = Array.isArray(window.finderCandidates)
+      ? window.finderCandidates.map((item) => ({
+        id: item.characterId,
+        name: item.name,
+        cost: item.costLabel ? item.costLabel.replace("コスト", "") : String(item.cost || ""),
+        rank: item.beginnerRank || item.totalRank || "要研究",
+        totalRank: item.totalRank || item.beginnerRank || "要研究",
+        beginnerRank: item.beginnerRank || item.totalRank || "要研究",
+        costLabel: item.costLabel || `${item.cost || ""}コスト`,
+        priority: Number(item.priority || 0),
+        rankScore: Number(item.rankScore || 0),
+        featured: !!item.featured,
+        image: item.image && item.image.startsWith("http") ? item.image : `https://starward-lab.com${item.image || ""}`,
+        axes: item.axes || {},
+        beginnerFit: item.axes?.beginnerFit || 3,
+        summary: item.summary || "",
+        reasons: item.reasons || [],
+        cautions: item.cautions || []
+      }))
+      : fallbackCandidates;
+
+    const axisLabels = {
+      rangeStyle: "射撃・格闘",
+      difficulty: "操作難度",
+      aggression: "逃げ・攻め",
+      popularity: "人気・マイナー",
+      independence: "連携・単独"
+    };
+
+    const axisWords = {
+      rangeStyle: { 0: "射撃規格外", 1: "射撃重視", 2: "やや射撃", 3: "万能型", 4: "やや格闘", 5: "格闘重視", 6: "格闘規格外" },
+      difficulty: { 0: "特殊難度", 1: "操作簡単", 2: "扱いやすい", 3: "標準難度", 4: "要練習", 5: "高難度", 6: "天元突破難度" },
+      aggression: { 0: "逃げ特化", 1: "逃げ重視", 2: "安定寄り", 3: "攻守両用", 4: "攻め寄り", 5: "攻め重視", 6: "攻め規格外" },
+      popularity: { 0: "超人気", 1: "人気", 2: "情報多め", 3: "標準", 4: "ややマイナー", 5: "マイナー", 6: "希少枠" },
+      independence: { 0: "連携特化", 1: "連携重視", 2: "連携寄り", 3: "編成対応", 4: "単独寄り", 5: "単独重視", 6: "単独規格外" },
+      beginnerFit: { 0: "初心者非推奨", 1: "癖強め", 2: "要慣れ", 3: "標準適性", 4: "初心者向け", 5: "入門向け", 6: "入門最適" }
+    };
+
+    const axisWeights = {
+      rangeStyle: 24,
+      difficulty: 22,
+      aggression: 20,
+      popularity: 14,
+      independence: 18
+    };
+
+    const beginnerBonus = { 0: -24, 1: -12, 2: -5, 3: 0, 4: 6, 5: 10, 6: 14 };
+
+    function distanceScore(distance, weight) {
+      if (distance === 0) return weight;
+      if (distance === 1) return weight * .64;
+      if (distance === 2) return weight * .28;
+      if (distance === 3) return weight * .05;
+      return -weight * .22;
+    }
+
+    function matchTone(score) {
+      const pct = clamp(Math.round(score / 132 * 100), 0, 100);
+      if (pct >= 78) return { label: "BEST", bar: 94, tone: "high", percent: pct };
+      if (pct >= 58) return { label: "HIGH", bar: 76, tone: "mid", percent: pct };
+      return { label: "PICK", bar: 58, tone: "base", percent: pct };
+    }
+
+    function word(axis, value) {
+      return axisWords[axis]?.[Number(value)] || `${value}`;
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    let step = 0;
+    let answers = {};
+    let lastResults = [];
+    let activeQuestions = questions;
+    let precisionMode = false;
+    let rankedCache = null;
+
+    const questionScreen = document.getElementById("questionScreen");
+    const resultPanel = document.getElementById("resultPanel");
+    const stepText = document.getElementById("stepText");
+    const progress = document.getElementById("progress");
+    const axisText = document.getElementById("axisText");
+    const questionTitle = document.getElementById("questionTitle");
+    const questionDesc = document.getElementById("questionDesc");
+    const leftLabel = document.getElementById("leftLabel");
+    const rightLabel = document.getElementById("rightLabel");
+    const choiceGrid = document.getElementById("choiceGrid");
+    const backBtn = document.getElementById("backBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const retryBtn = document.getElementById("retryBtn");
+    const shareBtn = document.getElementById("shareBtn");
+    const insightPanel = document.getElementById("insightPanel");
+    const comparePanel = document.getElementById("comparePanel");
+    const extraPanel = document.getElementById("extraPanel");
+    const resultGrid = document.getElementById("resultGrid");
+    const modal = document.getElementById("modal");
+    const modalBody = document.getElementById("modalBody");
+    const closeModal = document.getElementById("closeModal");
+    const toast = document.getElementById("toast");
+
+    function renderQuestion() {
+      const q = activeQuestions[step];
+      document.querySelectorAll(".precision-note").forEach((el) => el.remove());
+      stepText.textContent = `QUESTION ${step + 1} / ${activeQuestions.length}`;
+      progress.style.width = `${(step / activeQuestions.length) * 100}%`;
+      axisText.textContent = q.axis;
+      questionTitle.textContent = q.title;
+      questionDesc.textContent = q.desc;
+      leftLabel.textContent = q.left;
+      rightLabel.textContent = q.right;
+      choiceGrid.innerHTML = "";
+      q.options.forEach(([label, hint, value]) => {
+        const button = document.createElement("button");
+        button.className = "choice";
+        button.type = "button";
+        button.innerHTML = `<b>${label}</b><span>${hint}</span>`;
+        button.addEventListener("click", () => choose(q.id, value));
+        choiceGrid.appendChild(button);
+      });
+      if (precisionMode && step >= questions.length && !document.querySelector(".precision-note")) {
+        questionTitle.insertAdjacentHTML("beforebegin", `<div class="precision-note">精密診断: 上位候補が拮抗しています</div>`);
+      }
+      backBtn.disabled = step === 0;
+      questionScreen.classList.remove("hidden");
+      resultPanel.classList.remove("show");
+    }
+
+    function choose(axis, value) {
+      answers[axis] = value;
+      rankedCache = null;
+      step += 1;
+      if (step >= activeQuestions.length) {
+        if (!precisionMode && needsPrecision()) startPrecision();
+        else showResults();
+      }
+      else renderQuestion();
+    }
+
+    function rankedCandidates() {
+      if (rankedCache) return rankedCache;
+      rankedCache = candidates
+        .map((candidate) => analyzeCandidate(candidate))
+        .sort((a, b) => b.score - a.score || Number(b.axes?.beginnerFit || 0) - Number(a.axes?.beginnerFit || 0));
+      return rankedCache;
+    }
+
+    function needsPrecision() {
+      const ranked = rankedCandidates();
+      if (ranked.length < 2) return false;
+      const gap = ranked[0].score - ranked[1].score;
+      const topFiveGap = ranked[0].score - ranked[Math.min(4, ranked.length - 1)].score;
+      return gap < 7 || topFiveGap < 18;
+    }
+
+    function startPrecision() {
+      precisionMode = true;
+      activeQuestions = questions.concat(precisionQuestions);
+      renderQuestion();
+    }
+
+    function analyzeCandidate(candidate) {
+      let score = Number(candidate.priority || 0) + Number(candidate.rankScore || 0) * 1.2;
+      const matched = [];
+      const breakdown = [];
+      const components = {
+        preference: 0,
+        difficulty: 0,
+        beginner: 0,
+        cost: 0,
+        stability: 0,
+        growth: 0,
+        rank: Number(candidate.priority || 0) + Number(candidate.rankScore || 0) * 1.2
+      };
+
+      questions.forEach((q) => {
+        const axis = q.id;
+        const desired = Number(answers[axis] ?? 3);
+        const actual = Number(candidate.axes?.[axis]);
+        if (Number.isNaN(actual)) return;
+        const weight = axisWeights[axis] || 12;
+        const distance = Math.abs(actual - desired);
+        const axisScore = distanceScore(distance, weight);
+        score += axisScore;
+        components.preference += axis === "difficulty" ? 0 : axisScore;
+
+        let penalty = 0;
+        if (axis === "difficulty") {
+          if (actual === 6 && desired < 5) penalty -= 34;
+          else if (actual > desired) penalty -= (actual - desired) * 5;
+          score += penalty;
+          components.difficulty += axisScore + penalty;
+        }
+
+        if (distance <= 1) matched.push(`${axisLabels[axis]}が近い`);
+        breakdown.push({
+          axis,
+          label: axisLabels[axis],
+          desired,
+          actual,
+          distance,
+          axisScore: axisScore + penalty,
+          fit: clamp(Math.round((1 - Math.min(distance, 4) / 4) * 100), 0, 100)
+        });
+      });
+
+      const fit = Number(candidate.axes?.beginnerFit ?? candidate.beginnerFit);
+      if (!Number.isNaN(fit)) {
+        const beginner = beginnerBonus[fit] ?? 0;
+        score += beginner;
+        components.beginner += beginner;
+        if (fit >= 4) matched.push("初心者適性高め");
+        if (fit <= 1 && Number(answers.difficulty) <= 2) score -= 8;
+      }
+      if ([0, 6].includes(Number(candidate.axes?.rangeStyle))) matched.push("射格の規格外枠");
+      if (Number(candidate.axes?.difficulty) === 6) matched.push("難度6枠");
+
+      if (answers.costComfort) {
+        const desiredCost = Number(answers.costComfort);
+        const cost = Number(candidate.cost || String(candidate.costLabel || "").replace(/[^0-9.]/g, ""));
+        const costScale = cost >= 3 ? 5 : cost >= 2.5 ? 4 : cost >= 2 ? 2 : 1;
+        const costDelta = Math.abs(costScale - desiredCost);
+        const costScore = distanceScore(costDelta, 10);
+        score += costScore;
+        components.cost += costScore;
+        if (costDelta <= 1) matched.push("コスト感が近い");
+      }
+
+      if (answers.forgiveness) {
+        const desiredForgiveness = Number(answers.forgiveness);
+        const difficulty = Number(candidate.axes?.difficulty || 3);
+        const beginnerFit = Number(candidate.axes?.beginnerFit || 3);
+        const stability = clamp(7 - difficulty + beginnerFit, 1, 6);
+        const desiredStability = 6 - desiredForgiveness;
+        const stabilityDelta = Math.abs(stability - desiredStability);
+        const stabilityScore = distanceScore(stabilityDelta, 12);
+        score += stabilityScore;
+        components.stability += stabilityScore;
+        if (stabilityDelta <= 1) matched.push("リカバリー感が近い");
+      }
+
+      if (answers.growthStyle) {
+        const desiredGrowth = Number(answers.growthStyle);
+        const difficulty = Number(candidate.axes?.difficulty || 3);
+        const beginnerFit = Number(candidate.axes?.beginnerFit || 3);
+        const growth = clamp(Math.round((difficulty + (6 - beginnerFit)) / 2), 1, 5);
+        const growthDelta = Math.abs(growth - desiredGrowth);
+        const growthScore = distanceScore(growthDelta, 10);
+        score += growthScore;
+        components.growth += growthScore;
+        if (growthDelta <= 1) matched.push("上達スタイルが近い");
+      }
+
+      const tone = matchTone(score);
+      return {
+        ...candidate,
+        score,
+        match: tone.percent,
+        matchLabel: tone.label,
+        matchBar: tone.bar,
+        matched: [...new Set(matched)].slice(0, 5),
+        breakdown,
+        components
+      };
+    }
+
+    function preferenceSummary() {
+      return questions.map((q) => {
+        const value = Number(answers[q.id] ?? 3);
+        const option = q.options.find((item) => Number(item[2]) === value);
+        return {
+          id: q.id,
+          left: q.left,
+          right: q.right,
+          value,
+          label: option?.[0] || String(value),
+          hint: option?.[1] || "",
+          pos: `${((value - 1) / 4) * 100}%`
+        };
+      });
+    }
+
+    function trainingPlan(top) {
+      const plan = [];
+      const difficulty = Number(answers.difficulty || 3);
+      const aggression = Number(answers.aggression || 3);
+      const rangeStyle = Number(answers.rangeStyle || 3);
+      const independence = Number(answers.independence || 3);
+
+      if (rangeStyle <= 2) plan.push("訓練場で赤ロック距離、着地取り、逃げ撃ちの3点を先に確認する。");
+      if (rangeStyle >= 4) plan.push("近距離で触る始動、離脱ルート、外した時の逃げ方をセットで覚える。");
+      if (difficulty <= 2) plan.push("最初の10戦はコンボより被弾理由のメモを優先する。");
+      if (difficulty >= 4) plan.push("難しめ許容なので、まず主力行動を3つに絞ってから増やす。");
+      if (aggression <= 2) plan.push("先落ちしない位置取りと、相方が攻めた時の援護だけ練習する。");
+      if (aggression >= 4) plan.push("開幕から攻めず、相手のブーストを使わせてから前に出る癖をつける。");
+      if (independence <= 2) plan.push("固定相方がいる想定で、合わせやすい射撃や拘束時間を確認する。");
+      if (independence >= 4) plan.push("単独で試合を動かす場面と、無理に行かない場面をリプレイで分ける。");
+      plan.push(`${top?.name || "1位候補"}は最初に20戦だけ触って、勝敗より操作ストレスを見る。`);
+      plan.push("候補上位3体を同じステージで触り、移動・自衛・ダメージの出しやすさを比べる。");
+      plan.push("負けた試合を1つ見返して、キャラが悪いのか距離選択が悪いのかを分ける。");
+      return [...new Set(plan)].slice(0, 4);
+    }
+
+    function compareText(candidate, index) {
+      const axes = candidate.axes || {};
+      const high = [];
+      if (Number(axes.rangeStyle) <= 2) high.push("射撃寄り");
+      if (Number(axes.rangeStyle) >= 4) high.push("格闘寄り");
+      if (Number(axes.aggression) <= 2) high.push("安定寄り");
+      if (Number(axes.aggression) >= 4) high.push("攻め寄り");
+      if (Number(axes.independence) <= 2) high.push("連携寄り");
+      if (Number(axes.independence) >= 4) high.push("単独寄り");
+      const role = high.length ? high.join("・") : "バランス型";
+      const labels = ["本命", "対抗", "気分転換"];
+      return {
+        label: labels[index] || `候補${index + 1}`,
+        body: `${candidate.name}は${role}。相性${candidate.match}%なので、${index === 0 ? "最初に触る基準役" : index === 1 ? "本命が合わない時の比較役" : "違う勝ち方を試す予備枠"}に向いています。`
+      };
+    }
+
+    function playstyleProfile() {
+      const range = Number(answers.rangeStyle || 3);
+      const diff = Number(answers.difficulty || 3);
+      const aggro = Number(answers.aggression || 3);
+      const indep = Number(answers.independence || 3);
+      const pop = Number(answers.popularity || 3);
+      const prefix = range <= 2 ? "堅実射撃" : range >= 4 ? "近距離突破" : "万能対応";
+      const core = aggro <= 2 ? "サバイバー" : aggro >= 4 ? "ブレイカー" : "スイッチャー";
+      const suffix = indep <= 2 ? "連携型" : indep >= 4 ? "単独型" : "編成対応型";
+      const spice = diff >= 4 ? "伸びしろ重視" : diff <= 2 ? "安定入門" : pop >= 4 ? "個性派" : "";
+      return {
+        name: [spice, prefix + core, suffix].filter(Boolean).join("・"),
+        note: "あなたの回答から作った独自プレイスタイル名です。おすすめ順位だけでなく、選ぶ時の軸として使えます。"
+      };
+    }
+
+    function riskWarnings(top) {
+      const warnings = [];
+      const axes = top?.axes || {};
+      if (Number(axes.difficulty) > Number(answers.difficulty || 3)) {
+        warnings.push(`${top.name}は希望より操作難度が高めです。最初は主力行動を絞った方が続きます。`);
+      }
+      if (Number(axes.beginnerFit) <= 1) {
+        warnings.push(`${top.name}は初心者適性が低めです。見た目や動きが刺さる場合の愛枠寄りです。`);
+      }
+      if (Math.abs(Number(axes.rangeStyle || 3) - Number(answers.rangeStyle || 3)) >= 2) {
+        warnings.push("射撃・格闘の好みと上位候補に少しズレがあります。2位以下も必ず触って比べてください。");
+      }
+      if (Number(answers.popularity) >= 4 && Number(axes.popularity) <= 2) {
+        warnings.push("マイナー寄り希望に対して情報量が多い候補が上がっています。個性重視なら別コスト候補も確認しましょう。");
+      }
+      if (!warnings.length) warnings.push("大きな地雷要素は少なめです。まずは上位3体を触って操作感で決めるのがよさそうです。");
+      return warnings.slice(0, 3);
+    }
+
+    function firstDayRoadmap(top) {
+      const range = Number(top?.axes?.rangeStyle || answers.rangeStyle || 3);
+      const diff = Number(top?.axes?.difficulty || answers.difficulty || 3);
+      const aggro = Number(top?.axes?.aggression || answers.aggression || 3);
+      return [
+        ["0分", `${top?.name || "1位候補"}の移動、メイン射撃、格闘、回避を訓練場で触る。`],
+        ["15分", range <= 2 ? "着地取りと距離を離す動きを確認する。" : range >= 4 ? "近距離で触る始動と離脱ルートを確認する。" : "射撃始動と格闘始動を1つずつ確認する。"],
+        ["30分", diff >= 4 ? "難しい派生は捨てて、使う行動を3つだけに絞る。" : "CPU戦で被弾した場面だけメモする。"],
+        ["60分", aggro >= 4 ? "対人で攻める前の待ち時間を意識する。" : "対人で先落ちしない位置取りを優先する。"]
+      ];
+    }
+
+    function exclusionReasons() {
+      const picked = new Set(lastResults.map((item) => item.id));
+      return candidates
+        .map((candidate) => analyzeCandidate(candidate))
+        .filter((candidate) => !picked.has(candidate.id))
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 3)
+        .map((candidate) => {
+          const reasons = [];
+          const axes = candidate.axes || {};
+          if (Math.abs(Number(axes.rangeStyle || 3) - Number(answers.rangeStyle || 3)) >= 3) reasons.push("射撃/格闘の好みが遠い");
+          if (Number(axes.difficulty || 3) > Number(answers.difficulty || 3) + 1) reasons.push("操作難度が高い");
+          if (Number(axes.beginnerFit || 3) <= 1) reasons.push("初心者適性が低い");
+          if (Math.abs(Number(axes.aggression || 3) - Number(answers.aggression || 3)) >= 3) reasons.push("攻め/逃げの方針が遠い");
+          return { name: candidate.name, reason: reasons[0] || "総合スコアが上位候補に届かなかった" };
+        });
+    }
+
+    function costSuggestions() {
+      const bestByCost = new Map();
+      lastResults.forEach((candidate) => {
+        const key = candidate.costLabel || `${candidate.cost}コスト`;
+        if (!bestByCost.has(key)) bestByCost.set(key, candidate);
+      });
+      candidates
+        .map((candidate) => analyzeCandidate(candidate))
+        .sort((a, b) => b.score - a.score)
+        .forEach((candidate) => {
+          const key = candidate.costLabel || `${candidate.cost}コスト`;
+          if (!bestByCost.has(key)) bestByCost.set(key, candidate);
+        });
+      return Array.from(bestByCost.entries())
+        .sort((a, b) => Number(String(b[0]).replace(/[^0-9.]/g, "")) - Number(String(a[0]).replace(/[^0-9.]/g, "")))
+        .slice(0, 5);
+    }
+
+    function renderExtras() {
+      const top = lastResults[0];
+      const style = playstyleProfile();
+      const warnings = riskWarnings(top);
+      const roadmap = firstDayRoadmap(top);
+      const excluded = exclusionReasons();
+      const costs = costSuggestions();
+      extraPanel.innerHTML = `
+        <section class="extra-card">
+          <h3>性格タイプ名</h3>
+          <p class="playstyle-name">${esc(style.name)}</p>
+          <p class="playstyle-note">${esc(style.note)}</p>
+        </section>
+        <section class="extra-card">
+          <h3>地雷警告</h3>
+          <ul class="warning-list">${warnings.map((text) => `<li>${esc(text)}</li>`).join("")}</ul>
+        </section>
+        <section class="extra-card">
+          <h3>初日ロードマップ</h3>
+          <ul class="roadmap-list">${roadmap.map(([time, text]) => `<li><b>${esc(time)}</b><span>${esc(text)}</span></li>`).join("")}</ul>
+        </section>
+        <section class="extra-card">
+          <h3>候補除外理由</h3>
+          <ul class="exclude-list">${excluded.map((item) => `<li><b>${esc(item.name)}</b>: ${esc(item.reason)}</li>`).join("")}</ul>
+        </section>
+        <section class="extra-card">
+          <h3>コストバランス提案</h3>
+          <ul class="cost-list">${costs.map(([cost, candidate]) => `<li><b>${esc(cost)}</b><span>${esc(candidate.name)} / ${esc(candidate.matchLabel || "PICK")} ${esc(candidate.match || "-")}%</span></li>`).join("")}</ul>
+        </section>
+      `;
+    }
+
+    function renderInsights() {
+      const prefs = preferenceSummary();
+      const top = lastResults[0];
+      insightPanel.innerHTML = `
+        <section class="insight-card">
+          <h3>あなたの診断プロファイル</h3>
+          <div class="profile-grid">
+            ${prefs.map((item) => `
+              <div class="profile-row">
+                <span>${esc(item.left)}</span>
+                <i style="--pos:${item.pos}" title="${esc(item.label)}"></i>
+                <span>${esc(item.right)}</span>
+              </div>
+            `).join("")}
+          </div>
+        </section>
+        <section class="insight-card">
+          <h3>最初の練習メニュー</h3>
+          <ul class="plan-list">
+            ${trainingPlan(top).map((item, index) => `<li><b>${index + 1}</b><span>${esc(item)}</span></li>`).join("")}
+          </ul>
+        </section>
+      `;
+
+      comparePanel.innerHTML = lastResults.slice(0, 3).map((candidate, index) => {
+        const item = compareText(candidate, index);
+        return `
+          <section class="compare-card">
+            <strong>${esc(item.label)}: ${esc(candidate.name)}</strong>
+            <p>${esc(item.body)}</p>
+          </section>
+        `;
+      }).join("");
+    }
+
+    function showResults() {
+      lastResults = rankedCandidates().slice(0, 8);
+
+      progress.style.width = "100%";
+      questionScreen.classList.add("hidden");
+      resultPanel.classList.add("show");
+      renderInsights();
+      renderExtras();
+      resultGrid.innerHTML = "";
+
+      lastResults.forEach((candidate) => {
+        const card = document.createElement("button");
+        card.className = "card";
+        card.type = "button";
+        card.innerHTML = `
+          <div class="card-art" aria-hidden="true">${esc(String(candidate.name || "?").slice(0, 2))}</div>
+          <img src="${esc(candidate.image)}" alt="${esc(candidate.name)}" loading="lazy" decoding="async" fetchpriority="low" onerror="this.remove()">
+          <div class="card-body">
+            <div class="card-top">
+              <h3>${candidate.name}</h3>
+              <span class="rank">${candidate.rank}</span>
+            </div>
+            <div class="meta">${candidate.costLabel || `${candidate.cost}コスト`} / ${candidate.matchLabel} ${candidate.match}%</div>
+            <div class="match" aria-hidden="true"><i style="--match:${candidate.matchBar}%"></i></div>
+            <div class="tags">${candidate.matched.slice(0, 3).map((text) => `<span>${text}</span>`).join("")}</div>
+          </div>
+        `;
+        card.addEventListener("click", () => openDetail(candidate));
+        resultGrid.appendChild(card);
+      });
+    }
+
+    function esc(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderList(items) {
+      return (items || []).map((text) => `<li>${esc(text)}</li>`).join("");
+    }
+
+    function openDetail(candidate) {
+      try {
+        const axes = candidate.axes || {};
+        const detailBreakdown = Array.isArray(candidate.breakdown) && candidate.breakdown.length
+          ? candidate.breakdown
+          : questions.map((q) => {
+            const desired = Number(answers[q.id] ?? 3);
+            const actual = Number(axes[q.id] ?? 3);
+            const distance = Math.abs(actual - desired);
+            return {
+              axis: q.id,
+              label: axisLabels[q.id],
+              desired,
+              actual,
+              distance,
+              fit: clamp(Math.round((1 - Math.min(distance, 4) / 4) * 100), 0, 100)
+            };
+          });
+
+        const axisRows = questions.map((q) => {
+          const user = answers[q.id] ?? "-";
+          const char = axes[q.id] ?? "-";
+          return `<li>${esc(q.left)} ${esc(char)} / ${esc(q.right)}、あなたの回答 ${esc(user)}（${esc(word(q.id, char))}）</li>`;
+        }).join("");
+      const breakdownRows = detailBreakdown.map((row) => `
+        <div class="breakdown-row">
+          <span>${esc(row.label)}</span>
+          <i><b style="--axis-fit:${row.fit}%"></b></i>
+          <span>${esc(row.fit)}%</span>
+        </div>
+      `).join("");
+        const scoreComponents = candidate.components ? `
+          <div class="score-components">
+            <span>好み一致 ${Math.round(candidate.components.preference)}</span>
+            <span>難度補正 ${Math.round(candidate.components.difficulty)}</span>
+            <span>初心者補正 ${Math.round(candidate.components.beginner)}</span>
+            <span>コスト補正 ${Math.round(candidate.components.cost || 0)}</span>
+            <span>安定補正 ${Math.round(candidate.components.stability || 0)}</span>
+            <span>成長補正 ${Math.round(candidate.components.growth || 0)}</span>
+          </div>
+        ` : "";
+        const tags = (candidate.matched || []).map((text) => `<span>${esc(text)}</span>`).join("");
+        modalBody.innerHTML = `
+        <img src="${esc(candidate.image)}" alt="${esc(candidate.name)}" onerror="this.style.display='none'">
+        <div>
+          <p class="kicker">${esc(candidate.matchLabel || "PICK")} / MATCH ${esc(candidate.match ?? "-")}%</p>
+          <h3>${esc(candidate.name)}</h3>
+          <p><b>${esc(candidate.costLabel || `${candidate.cost}コスト`)} / 総合 ${esc(candidate.totalRank || candidate.rank)} / 初心者 ${esc(candidate.beginnerRank || candidate.rank)}</b></p>
+          <p>${esc(candidate.summary)}</p>
+          <div class="tags">${tags}</div>
+          ${scoreComponents}
+          <div class="breakdown">${breakdownRows}</div>
+          ${candidate.reasons?.length ? `<p class="detail-list-title">おすすめ理由</p><ul>${renderList(candidate.reasons)}</ul>` : ""}
+          ${candidate.cautions?.length ? `<p class="detail-list-title">注意点</p><ul>${renderList(candidate.cautions)}</ul>` : ""}
+          <p class="detail-list-title">回答との対応</p>
+          <ul>${axisRows}</ul>
+        </div>
+      `;
+      } catch (error) {
+        modalBody.innerHTML = `
+          <div>
+            <p class="kicker">DETAIL</p>
+            <h3>${esc(candidate?.name || "キャラクター詳細")}</h3>
+            <p>詳細の表示中に問題が起きました。結果カード自体の順位は診断スコアに基づいています。</p>
+          </div>
+        `;
+      }
+      if (modal.open) modal.close();
+      modal.showModal();
+    }
+
+    function resetFlow() {
+      step = 0;
+      answers = {};
+      lastResults = [];
+      activeQuestions = questions;
+      precisionMode = false;
+      rankedCache = null;
+      renderQuestion();
+    }
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add("show");
+      window.setTimeout(() => toast.classList.remove("show"), 1400);
+    }
+
+    backBtn.addEventListener("click", () => {
+      if (step > 0) {
+        delete answers[activeQuestions[step - 1].id];
+        step -= 1;
+        if (precisionMode && step < questions.length) {
+          activeQuestions = questions;
+          precisionMode = false;
+          Object.keys(answers).forEach((key) => {
+            if (precisionQuestions.some((q) => q.id === key)) delete answers[key];
+          });
+        }
+        renderQuestion();
+      }
+    });
+    resetBtn.addEventListener("click", resetFlow);
+    retryBtn.addEventListener("click", resetFlow);
+    closeModal.addEventListener("click", () => modal.close());
+    shareBtn.addEventListener("click", async () => {
+      const names = lastResults.slice(0, 3).map((c) => c.name).join("、");
+      const text = `初心者キャラ診断のおすすめ候補: ${names}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("結果をコピーしました");
+      } catch {
+        showToast(text);
+      }
+    });
+
+    renderQuestion();
+  </script>
+</body>
+</html>
