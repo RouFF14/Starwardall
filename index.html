@@ -639,6 +639,13 @@
       background: rgba(20, 77, 97, .38);
     }
 
+    .modal-shell {
+      display: grid;
+      grid-template-rows: 1fr auto;
+      max-height: calc(100vh - 34px);
+      background: rgba(240, 253, 255, .94);
+    }
+
     .modal {
       padding: 20px;
       display: grid;
@@ -646,15 +653,22 @@
       gap: 18px;
       max-height: calc(100vh - 112px);
       overflow: auto;
+      min-height: 0;
+      align-items: start;
     }
 
     .modal img {
       width: 100%;
+      min-width: 0;
       aspect-ratio: 3 / 4;
       object-fit: cover;
       border-radius: 16px;
       border: 1px solid var(--line);
       background: rgba(255, 255, 255, .34);
+    }
+
+    .modal > div {
+      min-width: 0;
     }
 
     .modal h3 {
@@ -850,8 +864,10 @@
   </main>
 
   <dialog id="modal">
-    <div class="modal" id="modalBody"></div>
-    <div class="close-row"><button class="btn" type="button" id="closeModal">閉じる</button></div>
+    <div class="modal-shell">
+      <div class="modal" id="modalBody"></div>
+      <div class="close-row"><button class="btn" type="button" id="closeModal">閉じる</button></div>
+    </div>
   </dialog>
   <div class="toast" id="toast">コピーしました</div>
 
